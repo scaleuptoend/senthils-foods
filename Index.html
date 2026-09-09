@@ -1,0 +1,2912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Senthil Food Center</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3E6B4F">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  :root{
+    --bg: #FAFAF8;
+    --card: #FFFFFF;
+    --ink: #1F2320;
+    --ink-soft: #767267;
+    --border: #E2DFD5;
+    --border-strong: #C9C3B2;
+    --accent: #3E6B4F;
+    --accent-soft: #EAF1EC;
+    --warn: #B0522C;
+    --warn-soft: #FBEEE9;
+    --total-bg: #F4F1E7;
+  }
+  *{ box-sizing: border-box; }
+  html, body{ height: 100%; overflow: hidden; overscroll-behavior: none; }
+  html{ touch-action: pan-x pan-y; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none; /* disables the iOS press-and-hold copy menu */
+  }
+  input, textarea{
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text; /* keep quantity fields editable */
+  }
+  .app{
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar{
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    padding: 26px 18px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar h1{ font-size: 17px; font-weight: 700; margin: 0 0 4px; }
+  .sidebar .tagline{ font-size: 12px; color: var(--ink-soft); margin: 0 0 26px; line-height: 1.4; }
+  .sidebar-nav{ display: flex; flex-direction: column; flex: 1; }
+  .sidebar-footer{
+    margin-top: auto;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align: center;
+    letter-spacing: 0.2px;
+  }
+  .sidebar-footer strong{ color: var(--ink); font-weight: 700; }
+  .nav-item{
+    display: flex;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 4px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .nav-item:hover{ background: var(--accent-soft); color: var(--accent); }
+  .nav-item.active{ background: var(--accent); color: #fff; }
+  .nav-item:active{ transform: scale(0.98); }
+
+  /* On a phone-width screen, a fixed 220px side column eats over a third of the
+     screen. Collapse it into a slim top bar with a horizontally-scrollable tab
+     row instead, so the dispatch grid gets the space it actually needs. */
+  @media (max-width: 760px){
+    .app{ flex-direction: column; }
+    .sidebar{
+      width: 100%;
+      height: auto;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar h1{ font-size: 15.5px; margin: 0; white-space: nowrap; }
+    .sidebar .tagline, .sidebar-footer{ display: none; }
+    /* Primary navigation now lives in the thumb-friendly bottom bar (see
+       .bottom-nav below), so the old horizontally-scrolling tab row is no
+       longer needed up here — it just ate space and was harder to reach
+       one-handed than a bar anchored to the bottom of the screen. */
+    .sidebar-nav{ display: none; }
+    .sidebar{ justify-content: center; padding: 12px 14px; }
+    .main{
+      flex: 1;
+      min-height: 0;
+      height: auto;
+      max-width: 100%;
+      padding: 18px 16px calc(84px + env(safe-area-inset-bottom));
+    }
+    /* These two grids are hard-coded to two equal columns for larger screens.
+       On a phone-width main column that squeezes each side to under 165px,
+       which is too narrow for the item/branch bars, charts, and setup rows
+       (add/remove buttons) inside them — so stack them instead. */
+    .bars-columns, .setup-columns{
+      grid-template-columns: 1fr;
+    }
+
+    /* Tighter, touch-friendly spacing throughout the main column. */
+    .page-title{ font-size: 17px; margin-bottom: 14px; }
+    .card{ padding: 14px; margin-bottom: 12px; border-radius: 10px; }
+    .section-label{ font-size: 13px; }
+
+    /* Let field rows wrap and fill the width instead of being capped at a
+       desktop-sized max-width, which otherwise leaves the phone-width row
+       looking cramped and lopsided. */
+    .toprow{ flex-wrap: wrap; gap: 10px; row-gap: 12px; }
+    .toprow .field{ max-width: none; flex: 1 1 130px; }
+    /* The detail pages put a title and a "Back" button on one row — on a
+       narrow phone these two no longer share a line comfortably, so let
+       them wrap and give the button a predictable tap target. */
+    .toprow > .page-title{ flex: 1 1 100%; }
+    .toprow #branch-back-btn, .toprow #item-back-btn{ flex: 0 0 auto; }
+
+    /* KPI cards: two per row reads better than the desktop auto-fit packing
+       three-plus tiny cards into a phone-width row. */
+    .kpi-row{ grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .kpi-card{ padding: 14px 10px; }
+    .kpi-value{ font-size: 20px; }
+    .kpi-label{ font-size: 11px; }
+
+    /* Full-width, stacked primary actions are easier to hit with a thumb
+       than a row of small side-by-side buttons. */
+    .save-btn{ width: 100%; }
+    /* The grid can run to many branches, so pin Save (with its status line)
+       just above the bottom nav while scrolling the sheet, instead of
+       leaving it stranded below the fold. */
+    .sheet-save-bar{
+      position: sticky;
+      bottom: calc(70px + env(safe-area-inset-bottom));
+      background: var(--card);
+      padding-top: 4px;
+      margin-top: 14px;
+      border-radius: 0 0 10px 10px;
+      box-shadow: 0 4px 14px rgba(31,35,32,0.18);
+    }
+    .sheet-save-bar .save-btn{ margin-top: 0; }
+    .btn-row{ flex-direction: column; }
+    .btn-row .action-btn{ width: 100%; }
+    .add-row{ flex-direction: column; gap: 8px; }
+    .add-row input{ max-width: none; }
+    .add-row button{ width: 100%; padding: 10px 16px; }
+
+    /* Setup rows (item/branch lists): let the name field flex to the
+       available width instead of stopping at a desktop max-width. */
+    .setup-row input{ max-width: none; }
+
+    /* History list: date/meta and the action buttons no longer fit on one
+       line at phone width, so stack them and let the buttons fill the row. */
+    .hist-entry{ flex-direction: column; align-items: stretch; gap: 10px; }
+    .hist-actions{ justify-content: stretch; }
+    .hist-actions .link-btn{ flex: 1; text-align: center; }
+
+    /* Both scrollable tables: slightly denser type and padding so more of
+       each row is visible without horizontal scrolling on a small screen. */
+    table.breakdown{ font-size: 12.5px; }
+    table.breakdown th, table.breakdown td{ padding: 8px 10px; }
+    table.grid th, table.grid td{ font-size: 12.5px; }
+    table.grid td.qty-cell input{ width: 54px; padding: 9px 2px; font-size: 13px; }
+    table.grid td.branch-cell, table.grid th.branch-head{ min-width: 110px; padding: 9px 10px; }
+  }
+
+  /* Extra-narrow phones: tighten once more without losing tap-target size. */
+  @media (max-width: 380px){
+    .kpi-row{ grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .kpi-value{ font-size: 18px; }
+    table.grid td.qty-cell input{ width: 46px; }
+  }
+
+  /* Bottom navigation bar — phone-only. Fixed to the bottom of the screen so
+     the four main sections are always one thumb-reach away, no matter how
+     deep the person has scrolled or which detail page is open. Desktop keeps
+     the sidebar as its primary navigation, so this stays hidden above the
+     760px breakpoint. */
+  .bottom-nav{ display: none; }
+  @media (max-width: 760px){
+    .bottom-nav{
+      display: flex;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 40;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+      box-shadow: 0 -2px 10px rgba(31,35,32,0.06);
+    }
+    .bottom-nav-item{
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      min-height: 52px;
+      padding: 6px 2px;
+      border: none;
+      background: none;
+      color: var(--ink-soft);
+      font-family: inherit;
+      font-size: 10.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: color 0.12s ease, background 0.12s ease;
+    }
+    .bottom-nav-item svg{
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    /* .nav-item already defines :hover/.active states for the desktop sidebar
+       (a solid accent-colored pill) — those aren't right for this compact
+       icon bar, so every state is repeated here with equal specificity
+       (two classes) to win the cascade instead of fighting it with !important. */
+    .bottom-nav-item:hover{ background: none; color: var(--ink-soft); }
+    .bottom-nav-item:active{ background: var(--accent-soft); color: var(--ink-soft); }
+    .bottom-nav-item.active{ background: none; color: var(--accent); }
+    .bottom-nav-item.active:active{ background: var(--accent-soft); }
+    .bottom-nav-item.active svg{ stroke-width: 2.2; }
+  }
+
+  /* Main content */
+  .main{
+    flex: 1;
+    padding: 28px 40px 60px;
+    max-width: 1080px;
+    height: 100vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .page-title{ font-size: 20px; font-weight: 700; margin: 0 0 18px; }
+
+  .card{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(31,35,32,0.04), 0 1px 8px rgba(31,35,32,0.03);
+  }
+  .toprow{ display:flex; align-items: center; gap: 14px; margin-bottom: 2px; }
+  .toprow .field{ flex: 1; max-width: 220px; }
+  label{ display:block; font-size: 12px; color: var(--ink-soft); margin-bottom: 5px; }
+  input[type="date"], input[type="text"], input[type="number"], select{
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--card);
+    color: var(--ink);
+    font-family: inherit;
+  }
+  input:focus, select:focus{ outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  input[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance: none; appearance: none; margin: 0; }
+
+  /* Dispatch grid */
+  .grid-scroll{
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+  table.grid{
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    min-width: 560px;
+    touch-action: pan-x;
+  }
+  table.grid th, table.grid td{
+    border-bottom: 1px solid var(--border-strong);
+    border-right: 1px solid var(--border-strong);
+    padding: 0;
+    font-size: 13.5px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  table.grid th{
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 700;
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 12.5px;
+    border-bottom: 2px solid var(--accent);
+  }
+  table.grid tbody tr:hover td:not(.qty-cell){ background: #F6F4EC; }
+  table.grid td.branch-cell, table.grid th.branch-head{
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--card);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    min-width: 130px;
+    border-right: 1px solid var(--border-strong);
+  }
+  table.grid th.branch-head{ background: var(--accent-soft); z-index: 3; }
+  table.grid td.branch-cell[data-branch]{ cursor: pointer; }
+  table.grid td.branch-cell[data-branch]:hover{ color: var(--accent); text-decoration: underline; }
+  table.grid th[data-item]{ cursor: pointer; }
+  table.grid th[data-item]:hover{ text-decoration: underline; background: #DCEBE2; }
+  table.grid td.qty-cell{ padding: 3px; text-align: center; }
+  table.grid td.qty-cell:nth-of-type(even){ background: #F5F3EA; }
+  table.grid tbody tr:hover td.qty-cell:nth-of-type(even){ background: #F0EEE2; }
+  table.grid td.qty-cell input{
+    width: 64px;
+    border: none;
+    text-align: center;
+    padding: 10px 2px;
+    font-size: 14px;
+    background: transparent;
+    touch-action: pan-x;
+  }
+  table.grid td.qty-cell input:focus{ background: var(--accent-soft); outline: none; }
+  table.grid td.row-total, table.grid th.total-head{
+    background: var(--total-bg);
+    text-align: center;
+    font-weight: 700;
+    color: var(--accent);
+    padding: 10px 8px;
+  }
+  table.grid tr.total-row td{
+    background: var(--total-bg);
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    padding: 10px 8px;
+  }
+  table.grid tr.total-row td.branch-cell{ background: var(--total-bg); }
+  table.grid tr:last-child td{ border-bottom: none; }
+  table.grid th:last-child, table.grid td:last-child{ border-right: none; }
+
+  /* Orphaned data: a branch/item that's been renamed or removed in Setup since
+     this date was saved, but still holds a real saved quantity. Shown instead of
+     hidden, so the grid's total always matches History/Analysis. */
+  table.grid th.col-removed{ background: var(--warn-soft); color: var(--warn); padding: 8px 8px; line-height: 1.5; }
+  table.grid .removed-tag{
+    display: inline-block;
+    font-size: 8.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--warn);
+    background: #fff;
+    border-radius: 999px;
+    padding: 1px 6px;
+    margin-top: 2px;
+  }
+  table.grid tr.row-removed td.branch-cell{ font-style: italic; color: var(--warn); }
+
+  .save-btn{
+    width: auto;
+    min-width: 160px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    padding: 11px 22px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 14px;
+    transition: background 0.12s ease, transform 0.08s ease;
+  }
+  .save-btn:hover{ background: #335A41; }
+  .save-btn:active{ transform: scale(0.97); }
+  .btn-row{ display:flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .action-btn{
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: none;
+    border-radius: 9px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s ease, transform 0.08s ease;
+  }
+  .action-btn:hover{ background: #DCEADF; }
+  .action-btn:active{ transform: scale(0.97); }
+  .status{ font-size: 13px; margin-top: 10px; min-height: 16px; color: var(--accent); transition: opacity 0.15s ease; }
+  .status.error{ color: var(--warn); }
+  .status:empty{ opacity: 0; }
+
+  /* Analysis */
+  .kpi-row{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .kpi-card{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 14px;
+    text-align: center;
+  }
+  .kpi-value{
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi-label{
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+  .bars-columns{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .bar-row{
+    margin-bottom: 10px;
+  }
+  .bar-row:last-child{ margin-bottom: 0; }
+  .bar-row .bar-top{
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .kpi-value.clickable{ cursor: pointer; }
+  .kpi-value.clickable:hover{ color: var(--accent); text-decoration: underline; }
+  .bar-row .bar-name{ font-weight: 600; }
+  .bar-row .bar-name.clickable{ cursor: pointer; }
+  .bar-row .bar-name.clickable:hover{ color: var(--accent); text-decoration: underline; }
+  .bar-row .bar-qty{ color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .bar-track{
+    background: var(--accent-soft);
+    border-radius: 5px;
+    height: 8px;
+    overflow: hidden;
+  }
+  .bar-fill{
+    background: var(--accent);
+    height: 100%;
+    border-radius: 5px;
+  }
+  .trend-empty-note{ font-size: 13px; color: var(--ink-soft); text-align: center; padding: 10px 0; }
+  .switch{ position: relative; display: inline-block; width: 40px; height: 24px; cursor: pointer; }
+  .switch input{ opacity: 0; width: 0; height: 0; }
+  .switch-slider{
+    position: absolute; inset: 0; background: var(--border);
+    border-radius: 999px; transition: background 0.15s ease;
+  }
+  .switch-slider::before{
+    content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: transform 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .switch input:checked + .switch-slider{ background: var(--accent); }
+  .switch input:checked + .switch-slider::before{ transform: translateX(16px); }
+
+  /* History */
+  .hist-entry{
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 13px 16px;
+    margin-bottom: 9px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color 0.12s ease;
+  }
+  .hist-entry:hover{ border-color: var(--accent); }
+  .hist-entry .date{ font-weight: 700; font-size: 14px; }
+  .hist-entry .meta{ font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .hist-actions{ display: flex; gap: 8px; }
+  .link-btn{
+    background: var(--accent-soft); border: none; color: var(--accent);
+    font-size: 13px; font-weight: 600; cursor: pointer; padding: 7px 12px; border-radius: 7px;
+    transition: background 0.12s ease;
+  }
+  .link-btn:hover{ background: #DCEADF; }
+  .link-btn.danger{ background: var(--warn-soft); color: var(--warn); }
+  .link-btn.danger:hover{ background: #F5DED4; }
+  .empty{ text-align: center; color: var(--ink-soft); font-size: 14px; padding: 24px 0; }
+
+  /* Settings */
+  .section-label{ font-size: 13.5px; font-weight: 700; margin: 0 0 12px; }
+
+  /* Branch-wise breakdown table */
+  .breakdown-scroll{ overflow-x: auto; }
+  table.breakdown{ width: 100%; border-collapse: collapse; font-size: 13.5px; white-space: nowrap; }
+  table.breakdown th, table.breakdown td{ padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+  table.breakdown th{ font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-soft); font-weight: 700; background: var(--accent-soft); position: sticky; top: 0; }
+  table.breakdown td.num, table.breakdown th.num{ text-align: right; font-variant-numeric: tabular-nums; }
+  table.breakdown tbody tr:hover td{ background: #F6F4EC; }
+  table.breakdown td.branch-name{ font-weight: 600; cursor: pointer; }
+  table.breakdown td.branch-name:hover{ color: var(--accent); text-decoration: underline; }
+  table.breakdown .tag{ display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; }
+  table.breakdown .tag.top{ background: var(--accent-soft); color: var(--accent); }
+  table.breakdown .tag.least{ background: #F4E9E4; color: #9C5A34; }
+  table.breakdown .tag.clickable{ cursor: pointer; }
+  table.breakdown .tag.clickable:hover{ text-decoration: underline; }
+  .setup-row{
+    display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border);
+  }
+  .setup-row:last-child{ border-bottom: none; }
+  .setup-row input{ flex: 1; min-width: 0; max-width: 260px; padding: 8px 10px; font-size: 14px; }
+  .move-btn, .remove-btn{
+    background: none; border: none; cursor: pointer; padding: 4px 7px; font-size: 15px; color: var(--ink-soft);
+    border-radius: 6px;
+  }
+  .move-btn:hover:not(:disabled){ background: var(--accent-soft); color: var(--accent); }
+  .move-btn:disabled{ opacity: 0.3; cursor: default; }
+  .remove-btn{ color: var(--warn); font-size: 18px; }
+  .remove-btn:hover{ background: var(--warn-soft); }
+  .add-row{ display: flex; gap: 10px; margin-top: 12px; }
+  .add-row input{ max-width: 260px; }
+  .add-row button{
+    background: var(--accent-soft); color: var(--accent); border: none;
+    border-radius: 8px; padding: 0 16px; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: background 0.12s ease;
+  }
+  .add-row button:hover{ background: #DCEADF; }
+  .setup-columns{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* Simple, non-technical online backup card */
+  .online-backup-card{
+    padding: 20px;
+    background: linear-gradient(135deg, #FFFFFF 0%, #F7FAF7 100%);
+    border-color: #D9E4DC;
+  }
+  .backup-header{
+    display:flex;
+    align-items:center;
+    gap:13px;
+  }
+  .backup-icon{
+    width:42px;
+    height:42px;
+    flex:0 0 42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:12px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    font-size:22px;
+    font-weight:800;
+  }
+  .backup-heading{
+    flex:1;
+    min-width:0;
+  }
+  .backup-heading .section-label{
+    margin:0 0 3px;
+    font-size:15px;
+  }
+  .backup-description{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:12.5px;
+    line-height:1.45;
+  }
+  .backup-status-badge{
+    flex:0 0 auto;
+    padding:6px 10px;
+    border-radius:999px;
+    background:var(--accent-soft);
+    color:var(--accent) !important;
+    font-size:11.5px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .backup-status-badge.is-error{
+    background:var(--warn-soft);
+    color:var(--warn) !important;
+  }
+  .backup-actions{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-top:16px;
+    padding-top:15px;
+    border-top:1px solid var(--border);
+  }
+  .backup-action-btn{
+    margin:0;
+    min-width:120px;
+    padding:10px 16px;
+  }
+  .backup-note{
+    color:var(--ink-soft);
+    font-size:11.5px;
+    line-height:1.4;
+  }
+  #cloud-status-message{
+    margin-bottom:0;
+  }
+  @media (max-width:600px){
+    .backup-header{
+      align-items:flex-start;
+    }
+    .backup-status-badge{
+      font-size:10.5px;
+      padding:5px 8px;
+    }
+    .backup-actions{
+      align-items:stretch;
+      flex-direction:column;
+      gap:8px;
+    }
+    .backup-action-btn{
+      width:100%;
+    }
+  }
+
+/* ===== MOBILE-FIRST REFINEMENTS ===== */
+html, body { width:100%; max-width:100%; }
+body { -webkit-tap-highlight-color: transparent; }
+button, input, select { touch-action: manipulation; }
+
+@media (max-width: 760px){
+  html, body { height:100%; height:100dvh; overflow:hidden; }
+  .app { height:100%; height:100dvh; width:100%; }
+  .sidebar {
+    flex:0 0 auto;
+    min-height:54px;
+    padding:8px 14px;
+    padding-top:calc(8px + env(safe-area-inset-top));
+  }
+  .sidebar h1 { font-size:16px; }
+  .main {
+    width:100%;
+    max-width:none;
+    min-width:0;
+    height:calc(100dvh - 54px);
+    padding:12px 10px calc(150px + env(safe-area-inset-bottom));
+    overflow-x:hidden;
+  }
+  .card {
+    width:100%;
+    padding:12px;
+    margin-bottom:10px;
+    border-radius:12px;
+  }
+  .page-title { font-size:18px; }
+  .toprow { width:100%; }
+  .toprow .field { flex:1 1 100%; max-width:none; }
+
+  /* Make every form control comfortably tappable. */
+  input[type="date"], input[type="text"], input[type="number"], select {
+    min-height:44px;
+    padding:10px 12px;
+    font-size:16px; /* prevents iOS Safari auto-zoom */
+    border-radius:9px;
+  }
+  label { font-size:12px; margin-bottom:6px; }
+
+  /* Dispatch sheet: keep the useful spreadsheet behavior, but make each
+     quantity box much easier to hit with a thumb. */
+  .grid-scroll {
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:clip;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+    border-radius:10px;
+    touch-action:pan-x pan-y;
+  }
+  table.grid { min-width:560px; touch-action:pan-x pan-y; }
+  table.grid td.qty-cell input { touch-action:manipulation; }
+  table.grid th, table.grid td { font-size:13px; }
+  table.grid th {
+    position:sticky;
+    top:0;
+    z-index:4;
+    padding:10px 8px;
+    min-height:44px;
+  }
+  table.grid td.branch-cell, table.grid th.branch-head {
+    position:sticky;
+    left:0;
+    min-width:112px;
+    width:112px;
+    max-width:112px;
+    padding:10px 9px;
+    z-index:5;
+  }
+  table.grid th.branch-head { z-index:7; }
+  table.grid td.qty-cell {
+    min-width:72px;
+    width:72px;
+    padding:3px;
+  }
+  table.grid td.qty-cell input {
+    width:100%;
+    min-width:64px;
+    min-height:46px;
+    padding:9px 2px;
+    font-size:16px;
+    font-weight:600;
+  }
+  table.grid td.row-total, table.grid th.total-head {
+    min-width:68px;
+    padding:10px 6px;
+  }
+  table.grid tr.total-row td { padding:11px 6px; }
+
+  /* Save is a flat, fixed bottom bar — not a floating/popup card.
+     It stays at the bottom of the screen above the navigation bar. */
+  .sheet-save-bar {
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:calc(64px + env(safe-area-inset-bottom));
+    z-index:50;
+    margin:0;
+    padding:7px 10px;
+    background:var(--card);
+    border:0;
+    border-top:1px solid var(--border);
+    border-radius:0;
+    box-shadow:none;
+  }
+  #sheet-tab > .card:nth-of-type(2){
+    padding-bottom:calc(76px + env(safe-area-inset-bottom));
+  }
+  .sheet-save-bar .save-btn{
+    width:100%;
+    margin:0;
+  }
+  .sheet-save-bar .status{
+    margin-bottom:0;
+  }
+  .save-btn {
+    min-height:46px;
+    margin-top:0;
+    font-size:15px;
+    border-radius:10px;
+  }
+  .status { font-size:12px; margin:7px 2px 0; }
+
+  /* Analysis cards become one-column, full-width mobile blocks. */
+  .kpi-row { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .kpi-card { min-width:0; padding:12px 8px; border-radius:10px; }
+  .kpi-value { font-size:19px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .kpi-label { font-size:10.5px; }
+  .bars-columns, .setup-columns { grid-template-columns:1fr; gap:10px; }
+
+  .bar-row .bar-top { font-size:12px; }
+  .bar-track { height:9px; }
+
+  .breakdown-scroll { max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table.breakdown { font-size:12.5px; min-width:520px; }
+  table.breakdown th, table.breakdown td { padding:9px 10px; }
+
+  .btn-row { flex-direction:column; gap:8px; }
+  .btn-row .action-btn, .action-btn {
+    width:100%;
+    min-height:44px;
+  }
+  .add-row { flex-direction:row; align-items:stretch; }
+  .add-row input { min-width:0; flex:1; }
+  .add-row button { flex:0 0 76px; min-height:44px; }
+
+  .setup-row { min-height:50px; }
+  .setup-row input { min-height:42px; font-size:16px; }
+  .move-btn, .remove-btn { min-width:40px; min-height:40px; }
+
+  .hist-entry { padding:12px; border-radius:10px; }
+  .hist-actions { width:100%; }
+  .hist-actions .link-btn { min-height:42px; }
+
+  .backup-actions { margin-top:12px; }
+  .backup-action-btn { min-height:44px; }
+
+  /* Detail-page back buttons are full-width and thumb friendly. */
+  #branch-detail-tab > .toprow,
+  #item-detail-tab > .toprow {
+    align-items:stretch;
+  }
+  #branch-back-btn, #item-back-btn {
+    min-height:44px;
+  }
+
+  .bottom-nav {
+    min-height:64px;
+    padding:5px 4px calc(5px + env(safe-area-inset-bottom));
+  }
+  .bottom-nav-item {
+    min-height:54px;
+    font-size:10px;
+  }
+  .bottom-nav-item svg { width:23px; height:23px; }
+}
+
+/* Very small phones */
+@media (max-width:380px){
+  .main { padding-left:8px; padding-right:8px; }
+  .card { padding:10px; }
+  .kpi-row { gap:6px; }
+  .kpi-value { font-size:17px; }
+  table.grid { min-width:540px; }
+  table.grid td.qty-cell { min-width:68px; width:68px; }
+  table.grid td.branch-cell, table.grid th.branch-head { min-width:105px; width:105px; max-width:105px; }
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <h1>Senthil Food Center</h1>
+    <p class="tagline">What the main branch sends out to each branch, every day</p>
+
+    <div class="sidebar-nav">
+      <button class="nav-item active" data-tab="sheet">Today's Sheet</button>
+      <button class="nav-item" data-tab="analysis">Analysis</button>
+      <button class="nav-item" data-tab="history">History</button>
+      <button class="nav-item" data-tab="setup">Settings</button>
+    </div>
+
+    <div class="sidebar-footer">Powered by <strong>Bizo Software Solution</strong></div>
+  </nav>
+
+  <main class="main">
+  <!-- SHEET -->
+  <div id="sheet-tab">
+    <div class="card">
+      <div class="toprow">
+        <div class="field">
+          <label for="sheet-date">Date</label>
+          <input type="date" id="sheet-date">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="grid-scroll">
+        <table class="grid" id="grid-table"></table>
+      </div>
+      <div class="sheet-save-bar">
+        <button class="save-btn" id="save-btn">Save sheet</button>
+        <p class="status" id="status"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYSIS -->
+  <div id="analysis-tab" style="display:none;">
+    <div class="card">
+      <div class="toprow" style="flex-wrap: wrap; gap: 8px;">
+        <div class="field" style="min-width: 110px; flex: 1;">
+          <label for="range-preset">Range</label>
+          <select id="range-preset">
+            <option value="0">Today</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="all">All time</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="field" id="range-from-field" style="display:none; min-width: 110px; flex:1;">
+          <label for="range-from">From</label>
+          <input type="date" id="range-from">
+        </div>
+        <div class="field" id="range-to-field" style="display:none; min-width: 110px; flex:1;">
+          <label for="range-to">To</label>
+          <input type="date" id="range-to">
+        </div>
+      </div>
+    </div>
+
+    <div id="analysis-empty" class="card" style="display:none;">
+      <p class="empty">No sheets saved in this range yet.</p>
+    </div>
+
+    <div id="analysis-content" style="display:none;">
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-total">0</div>
+          <div class="kpi-label">Total dispatched</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-avg">0</div>
+          <div class="kpi-label">Avg per day</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-top-item">–</div>
+          <div class="kpi-label">Top item</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-least-item">–</div>
+          <div class="kpi-label">Least sold item</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-top-branch">–</div>
+          <div class="kpi-label">Top branch</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Daily total dispatched</p>
+        <div id="trend-chart"></div>
+      </div>
+
+      <div class="bars-columns">
+        <div class="card">
+          <p class="section-label">By item</p>
+          <div id="item-bars"></div>
+        </div>
+
+        <div class="card">
+          <p class="section-label">By branch</p>
+          <div id="branch-bars"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Branch-wise breakdown</p>
+        <div class="breakdown-scroll">
+          <table class="breakdown" id="branch-breakdown-table"></table>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="action-btn" id="export-analysis-btn">Export summary CSV</button>
+        <button class="action-btn" id="export-day-image-btn">Download day data as image</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="history-tab" style="display:none;">
+    <div id="history-list"></div>
+  </div>
+
+  <!-- SETUP -->
+  <div id="setup-tab" style="display:none;">
+    <div class="card online-backup-card" id="cloud-card">
+      <div class="backup-header">
+        <div class="backup-icon" aria-hidden="true">↥</div>
+        <div class="backup-heading">
+          <p class="section-label">Shared sync</p>
+          <p class="backup-description">Everyone using this app shares the same live data — anyone's entries show up on every device automatically.</p>
+        </div>
+        <span id="cloud-status" class="backup-status-badge">Checking…</span>
+      </div>
+      <div class="backup-actions">
+        <button class="action-btn backup-action-btn" id="cloud-sync-btn" type="button">Sync now</button>
+        <span class="backup-note">Your data stays safe and shared even if you change or clear this device.</span>
+      </div>
+      <p class="status" id="cloud-status-message"></p>
+    </div>
+    <div class="card">
+      <p class="section-label">Backup &amp; restore</p>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">Save a copy of every sheet and setting to a file, or bring back a previous backup — handy if you switch phones or clear the browser.</p>
+      <div class="btn-row">
+        <button class="action-btn" id="backup-export-btn">Download backup (.json)</button>
+        <button class="action-btn" id="backup-restore-btn">Restore from file</button>
+        <input type="file" id="backup-file-input" accept="application/json" style="display:none;">
+      </div>
+      <p class="status" id="backup-status"></p>
+    </div>
+    <div class="setup-columns">
+      <div class="card">
+        <p class="section-label">Items (columns)</p>
+        <div id="items-setup"></div>
+        <div class="add-row">
+          <input type="text" id="new-item-name" placeholder="Add item, e.g. Sambar">
+          <button id="add-item-btn">Add</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Branches (rows)</p>
+        <div id="branches-setup"></div>
+        <div class="add-row">
+          <input type="text" id="new-branch-name" placeholder="Add branch, e.g. 100ft">
+          <button id="add-branch-btn">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- BRANCH DETAIL (opened by clicking a branch name in the sheet grid) -->
+  <div id="branch-detail-tab" style="display:none;">
+    <div class="toprow" style="justify-content: space-between; margin-bottom: 14px;">
+      <h2 class="page-title" id="branch-detail-title" style="margin:0;">Branch</h2>
+      <button class="action-btn" id="branch-back-btn">&larr; Back to sheet</button>
+    </div>
+
+    <div class="card">
+      <div class="toprow" style="flex-wrap: wrap; gap: 8px;">
+        <div class="field" style="min-width: 110px; flex: 1;">
+          <label for="branch-range-preset">Range</label>
+          <select id="branch-range-preset">
+            <option value="0">Today</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="all" selected>All time</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="field" id="branch-range-from-field" style="display:none; min-width: 110px; flex:1;">
+          <label for="branch-range-from">From</label>
+          <input type="date" id="branch-range-from">
+        </div>
+        <div class="field" id="branch-range-to-field" style="display:none; min-width: 110px; flex:1;">
+          <label for="branch-range-to">To</label>
+          <input type="date" id="branch-range-to">
+        </div>
+      </div>
+    </div>
+
+    <div id="branch-detail-empty" class="card" style="display:none;">
+      <p class="empty">No sheets saved for this branch in this range yet.</p>
+    </div>
+
+    <div id="branch-detail-content">
+      <div class="kpi-row" id="branch-kpi-row"></div>
+
+      <div class="card">
+        <p class="section-label" id="branch-today-label">Dispatch today</p>
+        <div id="branch-today-bars"></div>
+      </div>
+
+      <div class="bars-columns">
+        <div class="card">
+          <p class="section-label" id="branch-trend-label">Daily trend for this branch</p>
+          <div id="branch-trend-chart"></div>
+        </div>
+        <div class="card">
+          <p class="section-label" id="branch-item-label">Item breakdown</p>
+          <div id="branch-item-bars"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ITEM DETAIL (opened by clicking an item name/column anywhere in the app) -->
+  <div id="item-detail-tab" style="display:none;">
+    <div class="toprow" style="justify-content: space-between; margin-bottom: 14px;">
+      <h2 class="page-title" id="item-detail-title" style="margin:0;">Item</h2>
+      <button class="action-btn" id="item-back-btn">&larr; Back</button>
+    </div>
+
+    <div class="card">
+      <div class="toprow" style="flex-wrap: wrap; gap: 8px;">
+        <div class="field" style="min-width: 110px; flex: 1;">
+          <label for="item-range-preset">Range</label>
+          <select id="item-range-preset">
+            <option value="0">Today</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="all" selected>All time</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="field" id="item-range-from-field" style="display:none; min-width: 110px; flex:1;">
+          <label for="item-range-from">From</label>
+          <input type="date" id="item-range-from">
+        </div>
+        <div class="field" id="item-range-to-field" style="display:none; min-width: 110px; flex:1;">
+          <label for="item-range-to">To</label>
+          <input type="date" id="item-range-to">
+        </div>
+      </div>
+    </div>
+
+    <div id="item-detail-empty" class="card" style="display:none;">
+      <p class="empty">No sheets saved for this item in this range yet.</p>
+    </div>
+
+    <div id="item-detail-content">
+      <div class="kpi-row" id="item-kpi-row"></div>
+
+      <div class="card">
+        <p class="section-label">Daily trend for this item</p>
+        <div id="item-trend-chart"></div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Which branch sells this most</p>
+        <div id="item-branch-bars"></div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Branch-wise breakdown for this item</p>
+        <div class="breakdown-scroll">
+          <table class="breakdown" id="item-breakdown-table"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+  </main>
+</div>
+
+<!-- Bottom navigation (phone screens only — see .bottom-nav in <style>).
+     Same tabs as the sidebar; reuses the "nav-item" class so the existing
+     switchTab()/click-wiring in the script below drives both bars at once. -->
+<nav class="bottom-nav" aria-label="Main navigation">
+  <button class="nav-item bottom-nav-item active" data-tab="sheet" aria-label="Today's Sheet">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
+    <span>Sheet</span>
+  </button>
+  <button class="nav-item bottom-nav-item" data-tab="analysis" aria-label="Analysis">
+    <svg viewBox="0 0 24 24"><rect x="4" y="10" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="16" y="13" width="4" height="7" rx="1"/></svg>
+    <span>Analysis</span>
+  </button>
+  <button class="nav-item bottom-nav-item" data-tab="history" aria-label="History">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3.2 2"/></svg>
+    <span>History</span>
+  </button>
+  <button class="nav-item bottom-nav-item" data-tab="setup" aria-label="Settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.6M12 18.4V21M21 12h-2.6M5.6 12H3M18.02 5.98l-1.84 1.84M7.82 16.18l-1.84 1.84M18.02 18.02l-1.84-1.84M7.82 7.82L5.98 5.98"/></svg>
+    <span>Settings</span>
+  </button>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// Prevent mouse-wheel/trackpad scrolling from changing number inputs.
+// The page/table can still scroll normally; only a focused quantity field is protected.
+document.addEventListener('wheel', (e) => {
+  const target = e.target;
+  // Only step in when a quantity box is actually focused — that's the one situation
+  // where a wheel movement would otherwise bump its numeric value. If nothing is
+  // focused, don't touch the event at all, so the page scrolls freely in every
+  // direction even while the pointer is resting over the table.
+  if(target && target.matches && target.matches('input[type="number"]') && document.activeElement === target){
+    // Even then, only step in for vertical movement — a horizontal swipe/scroll is
+    // the person trying to pan the table sideways, so let that pass through too.
+    if(Math.abs(e.deltaY) > Math.abs(e.deltaX)){
+      target.blur();
+      e.preventDefault();
+    }
+  }
+}, { passive: false });
+
+// ---- Content protection: block copying and manual zooming ----
+document.addEventListener('copy', (e) => e.preventDefault());
+document.addEventListener('cut', (e) => e.preventDefault());
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// Block Ctrl/Cmd + scroll-wheel zoom
+document.addEventListener('wheel', (e) => {
+  if(e.ctrlKey) e.preventDefault();
+}, { passive: false });
+
+// Block Ctrl/Cmd + '+' / '-' / '0' keyboard zoom
+document.addEventListener('keydown', (e) => {
+  const key = e.key;
+  if((e.ctrlKey || e.metaKey) && (key === '+' || key === '-' || key === '=' || key === '0')){
+    e.preventDefault();
+  }
+});
+
+// Block pinch-to-zoom gestures on touch devices
+document.addEventListener('touchmove', (e) => {
+  // Never block a normal one-finger swipe: the main page and sheet must scroll freely.
+  // Only suppress multi-touch pinch gestures.
+  if(e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+
+const DEFAULT_ITEMS = ["Idli","Vada","Pongal","Chapati","Parotta"];
+const DEFAULT_BRANCHES = { b1:"Branch 1", b2:"Branch 2", b3:"Branch 3", b4:"Branch 4",
+  b5:"Branch 5", b6:"Branch 6", b7:"Branch 7", b8:"Branch 8" };
+
+let items = [];      // ["Idli","Vada",...] ordered
+let branches = {};   // {code: name} ordered by insertion
+let retiredBranches = {}; // {code: name} branches that were removed — kept only so old sheets can still show a real name instead of a bare code
+let currentSheetDate = null; // the date whose values are actually loaded into the grid inputs right now
+let dirtyBranches = new Set(); // branches actually typed into on THIS device since the last render — see saveSheet()
+
+// ---------------- SUPABASE CLOUD SYNC ----------------
+// The browser uses the public/anon key only. Never put a service-role/secret key in this file.
+const SUPABASE_URL = 'https://qxiazmsftkhkanlxphcx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4aWF6bXNmdGtoa2FubHhwaGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MDUxMjUsImV4cCI6MjEwNDM4MTEyNX0.4ZYCBDm-lxFdN_vJ2l7BGKJBlkO4kVYt2V1ycxrmpd0';
+let supabaseClient = null;
+let cloudReady = false;
+let cloudSyncing = false;
+let cloudSyncTimer = null;
+let realtimeChannel = null;
+const pendingCloudKeys = new Set();
+const lastPushedValue = {}; // key -> JSON of the value THIS device most recently pushed, to detect self-echoes
+
+function cloudSetStatus(text, error=false){
+  const el = document.getElementById('cloud-status');
+  if(el){
+    el.textContent = text;
+    el.classList.toggle('is-error', !!error);
+  }
+}
+function cloudMessage(text, error=false){
+  setStatus('cloud-status-message', text, error, error ? 5000 : 2500);
+}
+
+function localCloudKeys(){
+  const out = [];
+  for(let i=0; i<localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(key && (key.startsWith('sheet:') || key.startsWith('config:'))) out.push(key);
+  }
+  return out;
+}
+
+function localValue(key){
+  const raw = storeGet(key);
+  if(raw == null) return null;
+  try { return JSON.parse(raw); } catch(e) { return raw; }
+}
+
+async function initSupabase(){
+  try{
+    if(!window.supabase || !window.supabase.createClient) throw new Error('Supabase library did not load');
+    // No per-device login here on purpose: every phone/computer that opens this app
+    // should read and write the exact same shared rows, so everyone sees everyone
+    // else's entries instead of each device getting its own private silo of data.
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      realtime: { params: { eventsPerSecond: 10 } }
+    });
+
+    cloudReady = true;
+    cloudSetStatus(navigator.onLine ? 'Connecting…' : 'Offline — saved here');
+    await initialCloudSync();
+    subscribeRealtime();
+  }catch(err){
+    console.error('Supabase init failed:', err);
+    cloudReady = false;
+    cloudSetStatus('Shared sync unavailable', true);
+    cloudMessage('Online sync is unavailable right now. Your data is still saved on this device.', true);
+  }
+}
+
+async function initialCloudSync(){
+  if(!cloudReady || !supabaseClient) return;
+  cloudSyncing = true;
+  cloudSetStatus('Checking…');
+  try{
+    const { data: rows, error } = await supabaseClient
+      .from('app_data')
+      .select('key,value,updated_at')
+      .order('key');
+    if(error) throw error;
+
+    const cloudKeys = new Set((rows || []).map(r => r.key));
+    const localKeys = localCloudKeys();
+
+    // The shared table is the source of truth for every key it already has,
+    // so this device's copy of those keys is brought in line with everyone else's.
+    // A tombstoned row means someone deleted it on purpose — mirror that as a
+    // local removal instead of writing the marker back as if it were real data.
+    (rows || []).forEach(row => {
+      if(isTombstone(row.value)){
+        storeRemove(row.key);
+      }else{
+        storeSet(row.key, JSON.stringify(row.value));
+      }
+    });
+
+    // Anything that only exists on this device so far (e.g. entered while offline,
+    // or the very first device ever connected) still needs to be pushed up.
+    // Keys the cloud already has a tombstone for are excluded even if this
+    // device still has old local data for them, so a delete can't be undone
+    // just by a device that was offline when it happened.
+    const localOnlyKeys = localKeys.filter(key => !cloudKeys.has(key));
+    for(const key of localOnlyKeys) await syncKeyToCloud(key);
+
+    loadConfig();
+    renderGrid();
+    renderItemsSetup();
+    renderBranchesSetup();
+    if(document.getElementById('history-tab').style.display === 'block') loadHistory();
+
+    if(rows && rows.length){
+      cloudMessage(`Synced with the shared data: ${rows.length} record(s).`);
+    }else if(localOnlyKeys.length){
+      cloudMessage(`Shared backup created: ${localOnlyKeys.length} record(s).`);
+    }else{
+      cloudMessage('Sync is ready. Nothing new to save yet.');
+    }
+
+    pendingCloudKeys.clear();
+    cloudSetStatus(navigator.onLine ? 'Synced — live' : 'Offline — saved here');
+  }catch(err){
+    console.error('Initial cloud sync failed:', err);
+    cloudSetStatus('Sync not updated', true);
+    cloudMessage('Sync could not be updated. Your data is still safe on this device.', true);
+  }finally{
+    cloudSyncing = false;
+  }
+}
+
+async function syncKeyToCloud(key){
+  if(!cloudReady || !supabaseClient || !key) return false;
+  const value = localValue(key);
+  if(value == null) return false;
+
+  const { error } = await supabaseClient.from('app_data').upsert({
+    key,
+    value,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'key' });
+
+  if(error){
+    console.error('Cloud save failed:', error);
+    return false;
+  }
+  lastPushedValue[key] = JSON.stringify(value);
+  pendingCloudKeys.delete(key);
+  return true;
+}
+
+// Soft delete: instead of removing the row from Supabase (which can race with
+// another device's in-flight upload and silently come back to life), we
+// overwrite it with a tombstone marker. The row always exists in the cloud
+// table from this point on, so there's no window where "does this key exist"
+// is ambiguous — sync just has to check the marker instead of resurrecting it.
+async function deleteKeyFromCloud(key){
+  if(!cloudReady || !supabaseClient || !key) return false;
+  // Cancel any edit to this key that was queued before the delete, so a
+  // stale upload can't land after the tombstone and undo it.
+  pendingCloudKeys.delete(key);
+  const value = { __deleted: true, deleted_at: new Date().toISOString() };
+  const { error } = await supabaseClient.from('app_data').upsert({
+    key,
+    value,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'key' });
+  if(error){
+    console.error('Cloud delete failed:', error);
+    return false;
+  }
+  lastPushedValue[key] = JSON.stringify(value);
+  return true;
+}
+
+function isTombstone(value){
+  return !!(value && typeof value === 'object' && value.__deleted);
+}
+
+// ---- Live multi-user sync: push local edits (queueCloudSync/flushCloudQueue,
+// already wired into every save path below) AND listen for edits made by
+// anyone else's device right now, so several people can use this at the same
+// time and see each other's entries without hitting "Sync now" manually. ----
+function subscribeRealtime(){
+  if(!supabaseClient || realtimeChannel) return;
+  realtimeChannel = supabaseClient
+    .channel('app_data_live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data' }, handleRealtimeChange)
+    .subscribe((status) => {
+      if(status === 'SUBSCRIBED'){
+        cloudSetStatus(navigator.onLine ? 'Synced — live' : 'Offline — saved here');
+      }
+    });
+}
+
+function handleRealtimeChange(payload){
+  const key = (payload.new && payload.new.key) || (payload.old && payload.old.key);
+  if(!key) return;
+
+  if(payload.eventType === 'DELETE'){
+    storeRemove(key);
+    delete lastPushedValue[key];
+    applyRemoteKeyChange(key);
+    return;
+  }
+
+  if(isTombstone(payload.new.value)){
+    storeRemove(key);
+    delete lastPushedValue[key];
+    applyRemoteKeyChange(key);
+    return;
+  }
+
+  const incomingJson = JSON.stringify(payload.new.value);
+  const isOwnEcho = lastPushedValue[key] === incomingJson;
+  storeSet(key, JSON.stringify(payload.new.value));
+
+  if(isOwnEcho){
+    // Supabase is just echoing back the write this exact device made a moment
+    // ago — nothing actually changed, so don't rebuild anything or disturb
+    // whatever the person is doing right now (this was previously causing the
+    // grid to randomly rebuild mid-typing and lose whatever wasn't saved yet).
+    cloudSetStatus(navigator.onLine ? 'Synced — live' : 'Offline — saved here');
+    return;
+  }
+
+  applyRemoteKeyChange(key);
+}
+
+// Re-renders whichever on-screen view that key affects, so a change another
+// user just made shows up here without a page refresh.
+function applyRemoteKeyChange(key){
+  if(key.startsWith('config:')){
+    // A new item/branch column changes the grid's shape, so it has to rebuild —
+    // but flush any quantity the person is mid-typing into storage FIRST, or
+    // rebuilding the table would silently throw that unsaved keystroke away.
+    flushBackgroundSave();
+    loadConfig();
+    renderItemsSetup();
+    renderBranchesSetup();
+    renderGrid();
+  }else if(key.startsWith('sheet:')){
+    const activeIsQty = document.activeElement && document.activeElement.classList
+      && document.activeElement.classList.contains('qty');
+    // Don't yank the grid out from under someone who is actively typing right now.
+    if(key === sheetKey(currentSheetDate) && !activeIsQty){
+      renderGrid();
+    }
+    if(document.getElementById('analysis-tab').style.display === 'block') runAnalysis();
+    if(document.getElementById('history-tab').style.display === 'block') loadHistory();
+    if(document.getElementById('branch-detail-tab').style.display === 'block') renderBranchDetail();
+    if(document.getElementById('item-detail-tab').style.display === 'block') renderItemDetail();
+  }
+  cloudSetStatus(navigator.onLine ? 'Synced — live' : 'Offline — saved here');
+}
+
+function queueCloudSync(key){
+  if(!key || !(key.startsWith('sheet:') || key.startsWith('config:'))) return;
+  pendingCloudKeys.add(key);
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(flushCloudQueue, 700);
+}
+
+async function flushCloudQueue(){
+  clearTimeout(cloudSyncTimer);
+  if(!cloudReady || !navigator.onLine || cloudSyncing || pendingCloudKeys.size === 0) return;
+  cloudSyncing = true;
+  cloudSetStatus('Saving backup…');
+  try{
+    const keys = [...pendingCloudKeys];
+    for(const key of keys){
+      const ok = await syncKeyToCloud(key);
+      if(!ok) break;
+    }
+    cloudSetStatus(navigator.onLine ? (pendingCloudKeys.size ? 'Waiting to save' : 'Synced — live') : 'Offline — saved here');
+  }catch(err){
+    console.error(err);
+    cloudSetStatus('Waiting to save', true);
+  }finally{
+    cloudSyncing = false;
+  }
+}
+
+async function syncNow(){
+  if(!cloudReady){
+    cloudMessage('Online sync is not ready yet.', true);
+    return;
+  }
+  if(!navigator.onLine){
+    cloudMessage('You are offline. Changes are saved here and will sync to everyone once internet returns.', true);
+    return;
+  }
+  for(const key of localCloudKeys()) pendingCloudKeys.add(key);
+  await flushCloudQueue();
+  if(pendingCloudKeys.size === 0) cloudMessage('Everything is synced with the shared data.');
+  else cloudMessage('Some records are still waiting to sync.', true);
+}
+
+window.addEventListener('online', () => {
+  if(cloudReady){
+    cloudSetStatus('Back online — saving…');
+    flushCloudQueue();
+  }
+});
+window.addEventListener('offline', () => {
+  cloudSetStatus('Offline — saved here');
+});
+
+function todayStr(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
+
+function storeGet(key){ try{ return localStorage.getItem(key); }catch(e){ return null; } }
+function storeSet(key, value){ try{ localStorage.setItem(key, value); return true; }catch(e){ console.error(e); return false; } }
+function storeRemove(key){ try{ localStorage.removeItem(key); }catch(e){} }
+
+const statusClearTimers = {};
+function setStatus(elementId, message, isError, ms){
+  const el = document.getElementById(elementId);
+  if(!el) return;
+  el.classList.toggle('error', !!isError);
+  el.textContent = message;
+  clearTimeout(statusClearTimers[elementId]);
+  if(ms){
+    statusClearTimers[elementId] = setTimeout(() => { el.textContent = ''; }, ms);
+  }
+}
+
+let backgroundSaveTimer = null;
+
+function scheduleBackgroundSave(){
+  clearTimeout(backgroundSaveTimer);
+  backgroundSaveTimer = setTimeout(() => saveSheet(true), 250);
+}
+function flushBackgroundSave(){
+  if(backgroundSaveTimer){
+    clearTimeout(backgroundSaveTimer);
+    backgroundSaveTimer = null;
+    saveSheet(true);
+  }
+}
+
+function loadConfig(){
+  const rawItems = storeGet('config:items');
+  if(rawItems){ try{ items = JSON.parse(rawItems); }catch(e){ items = [...DEFAULT_ITEMS]; } }
+  else { items = [...DEFAULT_ITEMS]; storeSet('config:items', JSON.stringify(items)); }
+
+  const rawBranches = storeGet('config:branches');
+  if(rawBranches){ try{ branches = JSON.parse(rawBranches); }catch(e){ branches = {...DEFAULT_BRANCHES}; } }
+  else { branches = {...DEFAULT_BRANCHES}; storeSet('config:branches', JSON.stringify(branches)); }
+
+  const rawRetired = storeGet('config:retiredBranches');
+  if(rawRetired){ try{ retiredBranches = JSON.parse(rawRetired); }catch(e){ retiredBranches = {}; } }
+  else { retiredBranches = {}; }
+
+}
+function saveItemsConfig(){
+  const key = 'config:items';
+  storeSet(key, JSON.stringify(items));
+  queueCloudSync(key);
+}
+function saveBranchesConfig(){
+  const key = 'config:branches';
+  storeSet(key, JSON.stringify(branches));
+  queueCloudSync(key);
+}
+function saveRetiredBranchesConfig(){
+  const key = 'config:retiredBranches';
+  storeSet(key, JSON.stringify(retiredBranches));
+  queueCloudSync(key);
+}
+function branchCodes(){ return Object.keys(branches); }
+// Best available label for a branch code, even one that's been deleted from
+// Setup — falls back to its last known name (or the bare code as a last resort)
+// so an old sheet never shows a mystery blank row.
+function branchLabel(code){
+  if(branches[code]) return branches[code];
+  if(retiredBranches[code]) return `${retiredBranches[code]} (removed)`;
+  return `${code} (removed)`;
+}
+
+function findBranchCodeByLabel(label){
+  const code = Object.keys(branches).find(c => branches[c] === label);
+  return code || null;
+}
+
+// When an item is renamed in Setup, every sheet ever saved under the old name
+// still has that old key sitting in its data. Without this, those quantities
+// would silently stop showing up anywhere the grid is keyed by current item
+// names — this rewrites every saved sheet's key so the number stays attached
+// to the (renamed) item instead of turning into an orphan.
+function migrateItemRename(oldName, newName){
+  if(!oldName || !newName || oldName === newName) return;
+  const keys = [];
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(key && key.startsWith('sheet:')) keys.push(key);
+  }
+  keys.forEach(key => {
+    let parsed;
+    try{ parsed = JSON.parse(localStorage.getItem(key)); }catch(e){ return; }
+    if(!parsed || !parsed.data) return;
+    let changed = false;
+    Object.keys(parsed.data).forEach(code => {
+      const row = parsed.data[code];
+      if(row && Object.prototype.hasOwnProperty.call(row, oldName)){
+        if(!Object.prototype.hasOwnProperty.call(row, newName)){
+          row[newName] = row[oldName];
+        }
+        delete row[oldName];
+        changed = true;
+      }
+    });
+    if(changed){
+      storeSet(key, JSON.stringify(parsed));
+      queueCloudSync(key);
+    }
+  });
+}
+
+function sheetKey(date){ return `sheet:${date}`; }
+
+function loadSheetData(date){
+  return loadSheetDataRaw(date);
+}
+
+// Loads a saved sheet exactly as stored — including genuine 0s, which are a
+// real "dispatched zero" entry and must display and total the same as any
+// other saved number. Only a truly blank field (never entered) stays blank.
+function loadSheetDataRaw(date){
+  const raw = storeGet(sheetKey(date));
+  if(!raw) return {};
+  try{
+    const parsed = JSON.parse(raw);
+    return (parsed && parsed.data) ? parsed.data : {};
+  }catch(e){ return {}; }
+}
+
+
+function keepMobileCellVisible(input){
+  if(!input || window.innerWidth > 760) return;
+  requestAnimationFrame(() => {
+    const scroller = document.querySelector('.grid-scroll');
+    if(!scroller) return;
+    const r = input.getBoundingClientRect();
+    const sr = scroller.getBoundingClientRect();
+    const nav = document.querySelector('.bottom-nav');
+    const navTop = nav ? nav.getBoundingClientRect().top : window.innerHeight;
+    const safeBottom = Math.min(sr.bottom, navTop) - 12;
+    if(r.right > sr.right - 8) scroller.scrollLeft += (r.right - sr.right) + 18;
+    if(r.left < sr.left + 8) scroller.scrollLeft -= (sr.left - r.left) + 18;
+    if(r.bottom > safeBottom || r.top < sr.top + 8){
+      input.scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'});
+    }
+  });
+}
+
+function renderGrid(){
+  const date = document.getElementById('sheet-date').value;
+  currentSheetDate = date;
+  dirtyBranches = new Set(); // fresh render = nothing edited on this screen yet
+  const data = loadSheetData(date);
+  const table = document.getElementById('grid-table');
+
+  // History and Analysis total every number ever saved for a date, regardless of
+  // today's Setup config. If a branch or item was later renamed/removed, this grid
+  // used to only loop over the CURRENT config and would quietly skip those old
+  // entries — so a day could show e.g. "233 items" in History but look empty here.
+  // Fix: surface any branch/item still holding a real quantity as an extra
+  // "(removed)" row/column, so the grid always accounts for the same total.
+  const knownCodes = branchCodes();
+  const orphanCodes = Object.keys(data).filter(code =>
+    !knownCodes.includes(code) && Object.values(data[code] || {}).some(q => Number(q) > 0)
+  );
+  const allCodes = knownCodes.concat(orphanCodes);
+
+  const orphanItemsSet = new Set();
+  Object.values(data).forEach(rowData => {
+    Object.entries(rowData || {}).forEach(([item, qty]) => {
+      if(!items.includes(item) && Number(qty) > 0) orphanItemsSet.add(item);
+    });
+  });
+  const allItems = items.concat([...orphanItemsSet]);
+
+  let head = `<tr><th class="branch-head">Branch</th>`;
+  allItems.forEach(it => {
+    const isOrphan = !items.includes(it);
+    head += isOrphan
+      ? `<th class="col-removed" data-item="${escapeHtml(it)}" title="No longer in your item list, but still holds saved quantities — tap to see its analysis">${escapeHtml(it)}<br><span class="removed-tag">removed</span></th>`
+      : `<th data-item="${escapeHtml(it)}" title="Tap to see which branch sells this most">${escapeHtml(it)}</th>`;
+  });
+  head += `<th class="total-head">Total</th></tr>`;
+
+  let bodyRows = '';
+  allCodes.forEach(code => {
+    const rowData = data[code] || {};
+    const isOrphanBranch = !knownCodes.includes(code);
+    const branchAttr = isOrphanBranch ? '' : ` data-branch="${escapeHtml(code)}"`;
+    const label = isOrphanBranch ? `${escapeHtml(branchLabel(code))}` : escapeHtml(branches[code]);
+    bodyRows += `<tr data-code="${escapeHtml(code)}"${isOrphanBranch ? ' class="row-removed"' : ''}><td class="branch-cell"${branchAttr}>${label}</td>`;
+    allItems.forEach(it => {
+      const val = rowData[it] ?? '';
+      bodyRows += `<td class="qty-cell"><input type="number" min="0" inputmode="numeric" enterkeyhint="next" class="qty" data-item="${escapeHtml(it)}" value="${escapeHtml(val)}"></td>`;
+    });
+    bodyRows += `<td class="row-total" data-rowtotal="${escapeHtml(code)}">0</td></tr>`;
+  });
+
+  let totalRow = `<tr class="total-row"><td class="branch-cell">TOTAL</td>`;
+  allItems.forEach(it => totalRow += `<td data-coltotal="${escapeHtml(it)}">0</td>`);
+  totalRow += `<td data-grandtotal>0</td></tr>`;
+
+  table.innerHTML = head + bodyRows + totalRow;
+
+  // Cache every total cell ONCE per render. From here on, a keystroke updates
+  // just its row total, column total, and grand total directly (O(1)) instead
+  // of re-scanning every input in the table — stays snappy no matter how many
+  // branches or items are configured.
+  const colTotalCells = {};
+  table.querySelectorAll('tr.total-row [data-coltotal]').forEach(cell => {
+    colTotalCells[cell.getAttribute('data-coltotal')] = cell;
+  });
+  const grandCell = table.querySelector('[data-grandtotal]');
+
+  table.querySelectorAll('tr[data-code]').forEach(row => {
+    const code = row.getAttribute('data-code');
+    const rowTotalCell = row.querySelector('[data-rowtotal]');
+
+    row.querySelectorAll('input.qty').forEach(inp => {
+      inp.dataset.prev = String(parseInt(inp.value, 10) || 0);
+
+      inp.addEventListener('input', () => {
+        const n = parseInt(inp.value, 10);
+        const v = isNaN(n) ? 0 : n;
+        const prev = Number(inp.dataset.prev) || 0;
+        const delta = v - prev;
+        inp.dataset.prev = String(v);
+
+        if(delta !== 0){
+          if(rowTotalCell) rowTotalCell.textContent = (parseInt(rowTotalCell.textContent, 10) || 0) + delta;
+          const colCell = colTotalCells[inp.getAttribute('data-item')];
+          if(colCell) colCell.textContent = (parseInt(colCell.textContent, 10) || 0) + delta;
+          if(grandCell) grandCell.textContent = (parseInt(grandCell.textContent, 10) || 0) + delta;
+        }
+
+        dirtyBranches.add(code);
+        scheduleBackgroundSave();
+      });
+      inp.addEventListener('focus', () => {
+        // Select the existing value so tapping into a box lets you type straight over it —
+        // this is what makes moving box-to-box on a phone keypad feel instant.
+        inp.select();
+        keepMobileCellVisible(inp);
+      });
+      inp.addEventListener('keydown', (e) => {
+        switch(e.key){
+          case 'ArrowRight': e.preventDefault(); focusGridCell(inp, 0, 1); break;
+          case 'ArrowLeft':  e.preventDefault(); focusGridCell(inp, 0, -1); break;
+          case 'ArrowDown':  e.preventDefault(); focusGridCell(inp, 1, 0); break;
+          case 'ArrowUp':    e.preventDefault(); focusGridCell(inp, -1, 0); break;
+          case 'Enter':      e.preventDefault(); focusGridCell(inp, 1, 0); break;
+        }
+      });
+    });
+  });
+  recomputeTotals(); // one full, authoritative pass to paint correct starting totals
+
+  table.querySelectorAll('td.branch-cell[data-branch]').forEach(cell => {
+    cell.addEventListener('click', () => openBranchDetail(cell.getAttribute('data-branch')));
+  });
+
+  table.querySelectorAll('th[data-item]').forEach(th => {
+    th.addEventListener('click', () => openItemDetail(th.getAttribute('data-item')));
+  });
+}
+
+// Moves focus from the current qty input by rowOffset branches / colOffset items,
+// clamped to the edges of the grid (used for arrow-key / Enter navigation).
+function focusGridCell(currentInput, rowOffset, colOffset){
+  // Reads column order straight from the DOM (not the global `items` list) so
+  // navigation still works correctly on rows that include an extra "removed"
+  // item column the current config no longer knows about.
+  const table = document.getElementById('grid-table');
+  const rows = Array.from(table.querySelectorAll('tr[data-code]'));
+  const currentRow = currentInput.closest('tr');
+  const rowIndex = rows.indexOf(currentRow);
+  if(rowIndex === -1) return;
+  const rowInputs = Array.from(currentRow.querySelectorAll('input.qty'));
+  const itemIndex = rowInputs.indexOf(currentInput);
+  if(itemIndex === -1) return;
+
+  const targetRowIndex = Math.max(0, Math.min(rows.length - 1, rowIndex + rowOffset));
+  const targetRow = rows[targetRowIndex];
+  const targetInputs = Array.from(targetRow.querySelectorAll('input.qty'));
+  const targetItemIndex = Math.max(0, Math.min(targetInputs.length - 1, itemIndex + colOffset));
+  const targetInput = targetInputs[targetItemIndex];
+  if(targetInput){
+    targetInput.focus();
+    targetInput.select();
+    keepMobileCellVisible(targetInput);
+  }
+}
+
+function recomputeTotals(){
+  // Column list comes from whatever the total row actually has (including any
+  // "removed" orphan columns renderGrid added), not the global `items` array —
+  // otherwise those extra columns' numbers wouldn't make it into the totals.
+  const table = document.getElementById('grid-table');
+  const columnKeys = Array.from(table.querySelectorAll('tr.total-row [data-coltotal]'))
+    .map(el => el.getAttribute('data-coltotal'));
+  const colTotals = {};
+  columnKeys.forEach(k => colTotals[k] = 0);
+  let grand = 0;
+
+  table.querySelectorAll('tr[data-code]').forEach(row => {
+    const code = row.getAttribute('data-code');
+    let rowSum = 0;
+    row.querySelectorAll('input.qty').forEach(inp => {
+      const n = parseInt(inp.value, 10);
+      const v = isNaN(n) ? 0 : n;
+      rowSum += v;
+      const key = inp.getAttribute('data-item');
+      if(colTotals[key] === undefined) colTotals[key] = 0;
+      colTotals[key] += v;
+    });
+    grand += rowSum;
+    const cell = table.querySelector(`[data-rowtotal="${CSS.escape(code)}"]`);
+    if(cell) cell.textContent = rowSum;
+  });
+
+  columnKeys.forEach(it => {
+    const cell = table.querySelector(`[data-coltotal="${CSS.escape(it)}"]`);
+    if(cell) cell.textContent = colTotals[it];
+  });
+  const g = table.querySelector('[data-grandtotal]');
+  if(g) g.textContent = grand;
+}
+
+function saveSheet(silent){
+  const date = currentSheetDate || document.getElementById('sheet-date').value;
+  const table = document.getElementById('grid-table');
+
+  // Re-read the freshest copy of this day right before writing. Realtime updates
+  // from other phones land in storage even when this screen wasn't redrawn (e.g.
+  // while this device was mid-type in another row) — so this is more current than
+  // what's on screen for any branch this device didn't itself just edit. Use the
+  // raw loader (not the display-cleaned one) so an untouched branch's real 0s
+  // don't get silently rewritten to blank every time a different branch saves.
+  const freshest = loadSheetDataRaw(date);
+  const data = { ...freshest };
+
+  table.querySelectorAll('tr[data-code]').forEach(row => {
+    const code = row.getAttribute('data-code');
+    // Only a branch actually typed into on THIS device gets overwritten from the
+    // screen. Every other branch keeps the freshest stored value, so one phone's
+    // save never clobbers another phone's concurrent edit to a different branch.
+    if(!dirtyBranches.has(code) && freshest[code]) return;
+    const rowData = {};
+    row.querySelectorAll('input.qty').forEach(inp => {
+      const rawValue = inp.value.trim();
+      const n = parseInt(rawValue, 10);
+      rowData[inp.getAttribute('data-item')] = rawValue === '' ? '' : (isNaN(n) ? '' : n);
+    });
+    data[code] = rowData;
+  });
+
+  const key = sheetKey(date);
+  const ok = storeSet(key, JSON.stringify({ date, data, savedAt: new Date().toISOString() }));
+  if(ok) queueCloudSync(key);
+
+  if(silent){
+    // Quiet background autosave: don't interrupt with the full "Saved sheet…" message,
+    // but do surface a failure since that's the one case the person needs to know about.
+    if(ok){
+      setStatus('status', 'Autosaved', false, 1500);
+    }else{
+      setStatus('status', 'Autosave failed — please tap "Save sheet".', true, 4000);
+    }
+    return ok;
+  }
+
+  if(ok){
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setStatus('status', `Saved sheet for ${date} · ${time}`, false, 2500);
+  }else{
+    setStatus('status', 'Save failed — please try again.', true, 2500);
+  }
+  return ok;
+}
+
+function allSheets(){
+  const prefix = 'sheet:';
+  const out = [];
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(!key || !key.startsWith(prefix)) continue;
+    try{
+      const parsed = JSON.parse(localStorage.getItem(key));
+      if(parsed && parsed.date) out.push(parsed);
+    }catch(e){}
+  }
+  out.sort((a,b) => a.date.localeCompare(b.date));
+  return out;
+}
+
+function computeRangeFromPreset(preset, customFrom, customTo){
+  const all = allSheets();
+  if(all.length === 0) return { from: null, to: null };
+  if(preset === 'all'){
+    return { from: all[0].date, to: all[all.length - 1].date };
+  }
+  if(preset === 'custom'){
+    return { from: customFrom, to: customTo };
+  }
+  const days = Number(preset);
+  const to = new Date();
+  const from = new Date();
+  from.setDate(to.getDate() - Math.max(days - 1, 0));
+  return { from: from.toISOString().slice(0,10), to: to.toISOString().slice(0,10) };
+}
+
+function getAnalysisRange(){
+  const preset = document.getElementById('range-preset').value;
+  return computeRangeFromPreset(
+    preset,
+    document.getElementById('range-from').value,
+    document.getElementById('range-to').value
+  );
+}
+
+function renderTrendChart(containerId, dailyTotals){
+  const container = document.getElementById(containerId);
+  if(dailyTotals.length === 0){
+    container.innerHTML = `<p class="trend-empty-note">No data to chart.</p>`;
+    return;
+  }
+  if(dailyTotals.length === 1){
+    container.innerHTML = `<p class="trend-empty-note">${escapeHtml(dailyTotals[0].date)}: ${escapeHtml(dailyTotals[0].total)} items. Need more days for a trend.</p>`;
+    return;
+  }
+
+  const width = 640, height = 180;
+  const padL = 34, padR = 14, padT = 16, padB = 26;
+  const chartW = width - padL - padR;
+  const chartH = height - padT - padB;
+
+  const max = Math.max(...dailyTotals.map(d => d.total), 1);
+  const n = dailyTotals.length;
+  const stepX = chartW / (n - 1);
+
+  const points = dailyTotals.map((d, i) => ({
+    x: padL + stepX * i,
+    y: padT + chartH - (d.total / max) * chartH,
+    date: d.date,
+    total: d.total
+  }));
+
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L ${points[n-1].x.toFixed(1)} ${(padT+chartH).toFixed(1)} L ${points[0].x.toFixed(1)} ${(padT+chartH).toFixed(1)} Z`;
+
+  const gridLines = [0, 0.5, 1].map(f => {
+    const y = (padT + chartH - f * chartH).toFixed(1);
+    return `<line x1="${padL}" y1="${y}" x2="${width-padR}" y2="${y}" stroke="#E2DFD5" stroke-width="1"/>`;
+  }).join('');
+
+  const showEvery = Math.ceil(n / 8);
+  const dots = points.map((p, i) => {
+    const showLabel = i % showEvery === 0 || i === n - 1;
+    return `
+      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#3E6B4F">
+        <title>${escapeHtml(p.date)}: ${escapeHtml(p.total)}</title>
+      </circle>
+      ${showLabel ? `<text x="${p.x.toFixed(1)}" y="${height-8}" text-anchor="middle" font-size="9" fill="#767267">${escapeHtml(p.date.slice(5))}</text>` : ''}`;
+  }).join('');
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto; display:block;">
+      ${gridLines}
+      <path d="${areaPath}" fill="#EAF1EC" stroke="none"/>
+      <path d="${linePath}" fill="none" stroke="#3E6B4F" stroke-width="2.5"/>
+      ${dots}
+    </svg>`;
+}
+
+function renderBars(containerId, dataObj, onNameClick){
+  const container = document.getElementById(containerId);
+  const entries = Object.entries(dataObj).sort((a,b) => b[1] - a[1]);
+  if(entries.length === 0){
+    container.innerHTML = `<p class="trend-empty-note">No data.</p>`;
+    return;
+  }
+  const max = entries[0][1] || 1;
+  container.innerHTML = entries.map(([name, qty]) => `
+    <div class="bar-row">
+      <div class="bar-top"><span class="bar-name${onNameClick ? ' clickable' : ''}"${onNameClick ? ` data-bar-name="${escapeHtml(name)}" title="Tap for detail analysis"` : ''}>${escapeHtml(name)}</span><span class="bar-qty">${escapeHtml(qty)}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max((qty/max)*100, 3)}%"></div></div>
+    </div>
+  `).join('');
+
+  if(onNameClick){
+    container.querySelectorAll('[data-bar-name]').forEach(el => {
+      el.addEventListener('click', () => onNameClick(el.getAttribute('data-bar-name')));
+    });
+  }
+}
+
+function renderBranchBreakdown(branchItemTotalsByCode){
+  const table = document.getElementById('branch-breakdown-table');
+  const codes = Object.keys(branchItemTotalsByCode);
+
+  if(codes.length === 0){
+    table.innerHTML = `<tr><td><p class="trend-empty-note">No data.</p></td></tr>`;
+    return;
+  }
+
+  const rows = codes.map(code => {
+    const name = branches[code] || code;
+    // Rank against every configured item so a branch's "least" can be an
+    // item that branch simply never dispatched, same idea as the KPI above.
+    const ranked = items.map(it => [it, branchItemTotalsByCode[code][it] || 0]).sort((a,b) => b[1]-a[1]);
+    const total = ranked.reduce((sum, [, qty]) => sum + qty, 0);
+    const top = ranked[0];
+    const least = ranked.length ? ranked[ranked.length - 1] : null;
+    return { code, name, total, top, least };
+  }).sort((a,b) => b.total - a.total);
+
+  const headRow = `<tr><th>Branch</th><th class="num">Total</th><th>Top item</th><th>Least sold item</th></tr>`;
+  const bodyRows = rows.map(r => `
+    <tr>
+      <td class="branch-name" data-branch-code="${escapeHtml(r.code)}">${escapeHtml(r.name)}</td>
+      <td class="num">${escapeHtml(r.total)}</td>
+      <td>${r.top && r.top[1] > 0 ? `<span class="tag top clickable" data-item-name="${escapeHtml(r.top[0])}" title="Tap for this item's detail analysis">${escapeHtml(r.top[0])} · ${escapeHtml(r.top[1])}</span>` : '–'}</td>
+      <td>${r.least ? `<span class="tag least clickable" data-item-name="${escapeHtml(r.least[0])}" title="Tap for this item's detail analysis">${escapeHtml(r.least[0])} · ${escapeHtml(r.least[1])}</span>` : '–'}</td>
+    </tr>`).join('');
+
+  table.innerHTML = headRow + bodyRows;
+
+  table.querySelectorAll('td.branch-name[data-branch-code]').forEach(cell => {
+    cell.addEventListener('click', () => openBranchDetail(cell.getAttribute('data-branch-code')));
+  });
+  table.querySelectorAll('.tag[data-item-name]').forEach(tag => {
+    tag.addEventListener('click', () => openItemDetail(tag.getAttribute('data-item-name')));
+  });
+}
+
+let lastAnalysisData = null;
+
+function runAnalysis(){
+  const { from, to } = getAnalysisRange();
+  const emptyEl = document.getElementById('analysis-empty');
+  const contentEl = document.getElementById('analysis-content');
+
+  if(!from || !to){
+    emptyEl.style.display = 'block';
+    contentEl.style.display = 'none';
+    return;
+  }
+
+  const sheets = allSheets().filter(s => s.date >= from && s.date <= to);
+  if(sheets.length === 0){
+    emptyEl.style.display = 'block';
+    contentEl.style.display = 'none';
+    return;
+  }
+
+  const itemTotals = {};
+  const branchTotals = {};
+  const branchItemTotalsByCode = {}; // { code: { item: qty } }
+  const dailyTotals = [];
+  let grand = 0;
+
+  sheets.forEach(sheet => {
+    let dayTotal = 0;
+    Object.entries(sheet.data || {}).forEach(([code, rowData]) => {
+      const branchName = branches[code] || code;
+      if(!branchItemTotalsByCode[code]) branchItemTotalsByCode[code] = {};
+      Object.entries(rowData).forEach(([item, qty]) => {
+        const n = Number(qty) || 0;
+        itemTotals[item] = (itemTotals[item] || 0) + n;
+        branchTotals[branchName] = (branchTotals[branchName] || 0) + n;
+        branchItemTotalsByCode[code][item] = (branchItemTotalsByCode[code][item] || 0) + n;
+        dayTotal += n;
+      });
+    });
+    dailyTotals.push({ date: sheet.date, total: dayTotal });
+    grand += dayTotal;
+  });
+
+  // Rank every configured item (not just ones with sales) so "least sold" can
+  // surface items that were never dispatched, not just the smallest nonzero one.
+  const rankedItems = items.map(it => [it, itemTotals[it] || 0]).sort((a,b) => b[1]-a[1]);
+  const topItem = rankedItems[0];
+  const leastItem = rankedItems.length ? rankedItems[rankedItems.length - 1] : null;
+
+  const rankedBranches = Object.entries(branchTotals).sort((a,b) => b[1]-a[1]);
+  const topBranch = rankedBranches[0];
+
+  document.getElementById('kpi-total').textContent = grand;
+  document.getElementById('kpi-avg').textContent = Math.round(grand / sheets.length);
+
+  const topItemEl = document.getElementById('kpi-top-item');
+  topItemEl.textContent = topItem ? topItem[0] : '–';
+  topItemEl.classList.toggle('clickable', !!topItem);
+  topItemEl.title = topItem ? 'Tap for detail analysis' : '';
+  topItemEl.onclick = topItem ? () => openItemDetail(topItem[0]) : null;
+
+  const leastItemEl = document.getElementById('kpi-least-item');
+  leastItemEl.textContent = leastItem ? leastItem[0] : '–';
+  leastItemEl.classList.toggle('clickable', !!leastItem);
+  leastItemEl.title = leastItem ? 'Tap for detail analysis' : '';
+  leastItemEl.onclick = leastItem ? () => openItemDetail(leastItem[0]) : null;
+
+  const topBranchEl = document.getElementById('kpi-top-branch');
+  topBranchEl.textContent = topBranch ? topBranch[0] : '–';
+  topBranchEl.classList.toggle('clickable', !!topBranch);
+  topBranchEl.title = topBranch ? 'Tap for this branch\'s detail' : '';
+  topBranchEl.onclick = topBranch ? () => { const code = findBranchCodeByLabel(topBranch[0]); if(code) openBranchDetail(code); } : null;
+
+  renderTrendChart('trend-chart', dailyTotals);
+  renderBars('item-bars', itemTotals, openItemDetail);
+  renderBranchBreakdown(branchItemTotalsByCode);
+  renderBars('branch-bars', branchTotals, (name) => {
+    const code = findBranchCodeByLabel(name);
+    if(code) openBranchDetail(code);
+  });
+
+  emptyEl.style.display = 'none';
+  contentEl.style.display = 'block';
+
+  lastAnalysisData = { from, to, itemTotals, branchTotals, dailyTotals, grand };
+}
+
+function exportDayDataImage(){
+  const date = document.getElementById('sheet-date').value || todayStr();
+  const table = document.getElementById('grid-table');
+
+  if(!table){
+    alert('Could not find the dispatch table.');
+    return;
+  }
+
+  // Read column/row labels straight from the rendered table (not the current
+  // items/branches config) so the exported image always matches what's on
+  // screen — including any "(removed)" orphan columns/rows still holding data.
+  const columnKeys = Array.from(table.querySelectorAll('tr.total-row [data-coltotal]'))
+    .map(el => el.getAttribute('data-coltotal'));
+
+  const headers = ['Branch', ...columnKeys, 'Total'];
+  const rows = [headers];
+
+  table.querySelectorAll('tr[data-code]').forEach(row => {
+    const code = row.getAttribute('data-code');
+    const values = [branchLabel(code)];
+
+    row.querySelectorAll('input.qty').forEach(inp => {
+      values.push(inp.value.trim());
+    });
+
+    const totalCell = row.querySelector('[data-rowtotal]');
+    values.push(totalCell ? totalCell.textContent.trim() : '');
+    rows.push(values);
+  });
+
+  const totalRow = ['TOTAL'];
+  columnKeys.forEach(key => {
+    const cell = table.querySelector(`[data-coltotal="${CSS.escape(key)}"]`);
+    totalRow.push(cell ? cell.textContent.trim() : '0');
+  });
+  const grandCell = table.querySelector('[data-grandtotal]');
+  totalRow.push(grandCell ? grandCell.textContent.trim() : '0');
+  rows.push(totalRow);
+
+  const scale = 2;
+  const cellH = 58;
+  const branchW = 180;
+  const itemW = 105;
+  const totalW = 110;
+  const widths = [branchW, ...columnKeys.map(() => itemW), totalW];
+  const tableW = widths.reduce((a,b) => a+b, 0);
+  const titleH = 110;
+  const canvas = document.createElement('canvas');
+  canvas.width = tableW * scale;
+  canvas.height = (titleH + rows.length * cellH + 30) * scale;
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+  ctx.textBaseline = 'middle';
+
+  ctx.fillStyle = '#FAFAF8';
+  ctx.fillRect(0, 0, tableW, canvas.height / scale);
+
+  ctx.fillStyle = '#1F2320';
+  ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
+  ctx.fillText('Senthil Food Center — Dispatch Data', 20, 30);
+
+  ctx.fillStyle = '#767267';
+  ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
+  ctx.fillText(`Date: ${date}`, 20, 62);
+  ctx.fillText('Downloaded from the dispatch sheet', 20, 84);
+
+  let y = titleH;
+
+  rows.forEach((row, r) => {
+    let x = 0;
+    row.forEach((value, c) => {
+      const w = widths[c];
+
+      ctx.fillStyle = r === 0 ? '#EAF1EC' : (r === rows.length - 1 ? '#F4F1E7' : '#FFFFFF');
+      ctx.fillRect(x, y, w, cellH);
+
+      ctx.strokeStyle = '#E2DFD5';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 0.5, y + 0.5, w - 1, cellH - 1);
+
+      ctx.fillStyle = '#3E6B4F';
+      ctx.font = r === 0 || r === rows.length - 1
+        ? '700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif'
+        : '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
+
+      const text = String(value ?? '');
+      const maxChars = Math.max(5, Math.floor((w - 20) / 8));
+      const display = text.length > maxChars ? text.slice(0, maxChars - 1) + '…' : text;
+
+      if(c === 0){
+        ctx.textAlign = 'left';
+        ctx.fillText(display, x + 12, y + cellH / 2);
+      }else{
+        ctx.textAlign = 'center';
+        ctx.fillText(display, x + w / 2, y + cellH / 2);
+      }
+      x += w;
+    });
+    y += cellH;
+  });
+
+  ctx.textAlign = 'left';
+
+  canvas.toBlob(blob => {
+    if(!blob){
+      alert('Could not create the image.');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dispatch-${date}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, 'image/png');
+}
+
+function exportAnalysisCSV(){
+  if(!lastAnalysisData) return;
+  const { from, to, itemTotals, branchTotals, dailyTotals, grand } = lastAnalysisData;
+  let rows = [[`Summary ${from} to ${to}`]];
+  rows.push(['Total dispatched', grand]);
+  rows.push([]);
+  rows.push(['Item', 'Total Qty']);
+  Object.entries(itemTotals).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => rows.push([k, v]));
+  rows.push([]);
+  rows.push(['Branch', 'Total Qty']);
+  Object.entries(branchTotals).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => rows.push([k, v]));
+  rows.push([]);
+  rows.push(['Date', 'Daily Total']);
+  dailyTotals.forEach(d => rows.push([d.date, d.total]));
+
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `analysis-${from}-to-${to}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function loadHistory(){
+  const list = document.getElementById('history-list');
+  const prefix = 'sheet:';
+  const entries = [];
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(!key || !key.startsWith(prefix)) continue;
+    try{
+      const parsed = JSON.parse(localStorage.getItem(key));
+      if(parsed && typeof parsed.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date)){
+        entries.push({ date: parsed.date, key, parsed });
+      }
+    }catch(e){}
+  }
+  entries.sort((a,b) => b.date.localeCompare(a.date));
+
+  if(entries.length === 0){
+    list.innerHTML = `<p class="empty">No sheets saved yet.</p>`;
+    return;
+  }
+
+  list.innerHTML = entries.map(e => {
+    let grand = 0;
+    Object.values(e.parsed.data || {}).forEach(rowData => {
+      Object.values(rowData).forEach(q => grand += Number(q) || 0);
+    });
+    return `
+      <div class="hist-entry">
+        <div>
+          <div class="date">${escapeHtml(e.date)}</div>
+          <div class="meta">${escapeHtml(grand)} items dispatched</div>
+        </div>
+        <div class="hist-actions">
+          <button class="link-btn" data-open="${e.date}">Open</button>
+          <button class="link-btn danger" data-delete="${e.key}">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-open]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('sheet-date').value = btn.getAttribute('data-open');
+      renderGrid();
+      switchTab('sheet');
+    });
+  });
+  list.querySelectorAll('[data-delete]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(confirm('Delete this saved sheet? This cannot be undone.')){
+        const key = btn.getAttribute('data-delete');
+        storeRemove(key);
+        loadHistory();
+        const ok = await deleteKeyFromCloud(key); // tombstones the row so it can't come back on the next sync
+        if(!ok){
+          alert('Deleted on this device, but the shared cloud copy could not be updated. It may reappear here or on other devices once sync succeeds — check your connection and try deleting it again.');
+        }
+      }
+    });
+  });
+}
+
+function renderItemsSetup(){
+  const container = document.getElementById('items-setup');
+  container.innerHTML = items.map((name, idx) => `
+    <div class="setup-row" data-idx="${idx}">
+      <button class="move-btn" data-up="${idx}" ${idx===0?'disabled':''}>&uarr;</button>
+      <button class="move-btn" data-down="${idx}" ${idx===items.length-1?'disabled':''}>&darr;</button>
+      <input type="text" class="i-name" value="${escapeHtml(name)}">
+      <button class="remove-btn" data-remove="${idx}">&times;</button>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.i-name').forEach((inp, idx) => {
+    inp.addEventListener('change', () => {
+      const v = inp.value.trim();
+      if(!v) {
+        inp.value = items[idx];
+        return;
+      }
+      const duplicate = items.some((name, i) => i !== idx && name.trim().toLowerCase() === v.toLowerCase());
+      if(duplicate){
+        inp.value = items[idx];
+        return;
+      }
+      const oldName = items[idx];
+      items[idx] = v;
+      saveItemsConfig();
+      migrateItemRename(oldName, v); // keep every already-saved sheet's quantity attached to the renamed item
+      renderGrid();
+    });
+  });
+  container.querySelectorAll('[data-up]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = Number(btn.getAttribute('data-up'));
+      [items[i-1], items[i]] = [items[i], items[i-1]];
+      saveItemsConfig(); renderItemsSetup();
+    });
+  });
+  container.querySelectorAll('[data-down]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = Number(btn.getAttribute('data-down'));
+      [items[i+1], items[i]] = [items[i], items[i+1]];
+      saveItemsConfig(); renderItemsSetup();
+    });
+  });
+  container.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      items.splice(Number(btn.getAttribute('data-remove')), 1);
+      saveItemsConfig(); renderItemsSetup();
+    });
+  });
+}
+
+function renderBranchesSetup(){
+  const container = document.getElementById('branches-setup');
+  container.innerHTML = branchCodes().map(code => `
+    <div class="setup-row" data-code="${code}">
+      <input type="text" class="b-name" value="${escapeHtml(branches[code])}">
+      <button class="remove-btn" data-remove-branch="${code}">&times;</button>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.b-name').forEach((inp, idx) => {
+    const code = branchCodes()[idx];
+    inp.addEventListener('change', () => {
+      const v = inp.value.trim();
+      if(!v){
+        inp.value = branches[code];
+        return;
+      }
+      const duplicate = Object.entries(branches).some(([c, name]) =>
+        c !== code && name.trim().toLowerCase() === v.toLowerCase()
+      );
+      if(duplicate){
+        inp.value = branches[code];
+        return;
+      }
+      branches[code] = v;
+      saveBranchesConfig();
+      renderGrid();
+    });
+  });
+  container.querySelectorAll('[data-remove-branch]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const code = btn.getAttribute('data-remove-branch');
+      // Remember the name so old sheets can still show it (as "Name (removed)")
+      // instead of a bare code once it's gone from the active branch list.
+      retiredBranches[code] = branches[code];
+      saveRetiredBranchesConfig();
+      delete branches[code];
+      saveBranchesConfig();
+      renderBranchesSetup();
+    });
+  });
+}
+
+function switchTab(tab){
+  flushBackgroundSave();
+  document.getElementById('branch-detail-tab').style.display = 'none';
+  document.getElementById('item-detail-tab').style.display = 'none';
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  ['sheet','analysis','history','setup'].forEach(t => {
+    document.getElementById(`${t}-tab`).style.display = (t === tab) ? 'block' : 'none';
+  });
+  if(tab === 'sheet') renderGrid();
+  if(tab === 'analysis') runAnalysis();
+  if(tab === 'history') loadHistory();
+  if(tab === 'setup'){ renderItemsSetup(); renderBranchesSetup(); }
+}
+
+// ---- Branch detail (product overview) page ----
+
+let currentBranchDetailCode = null;
+
+function getBranchAnalysisRange(){
+  const preset = document.getElementById('branch-range-preset').value;
+  return computeRangeFromPreset(
+    preset,
+    document.getElementById('branch-range-from').value,
+    document.getElementById('branch-range-to').value
+  );
+}
+
+function renderBranchDetail(){
+  const code = currentBranchDetailCode;
+  if(!code) return;
+  document.getElementById('branch-detail-title').textContent = branchLabel(code);
+
+  // Read the current on-screen values for this branch (works even if not saved yet)
+  const date = document.getElementById('sheet-date').value;
+  const row = document.querySelector(`#grid-table tr[data-code="${CSS.escape(code)}"]`);
+  const onScreenData = {};
+  if(row){
+    row.querySelectorAll('input.qty').forEach(inp => {
+      onScreenData[inp.getAttribute('data-item')] = Number(inp.value) || 0;
+    });
+  }
+  document.getElementById('branch-today-label').textContent = `Dispatch on ${date}`;
+  renderBars('branch-today-bars', onScreenData, openItemDetail);
+
+  const { from, to } = getBranchAnalysisRange();
+  const emptyEl = document.getElementById('branch-detail-empty');
+  const contentEl = document.getElementById('branch-detail-content');
+
+  // One shared scan of every saved sheet, in this date range, powers every stat
+  // below — previously this screen (and every range change) re-scanned all of
+  // localStorage four separate times to get the same numbers.
+  const sheetsInRange = allSheets().filter(s => (!from || s.date >= from) && (!to || s.date <= to));
+  const branchSheets = sheetsInRange.filter(s => (s.data || {})[code]);
+
+  if(!from || !to || branchSheets.length === 0){
+    emptyEl.style.display = 'block';
+    contentEl.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  contentEl.style.display = 'block';
+
+  const itemTotals = {};
+  const dailyTotals = [];
+  let grand = 0;
+  let companyTotal = 0;
+
+  sheetsInRange.forEach(sheet => {
+    Object.values(sheet.data || {}).forEach(rowData => {
+      Object.values(rowData || {}).forEach(qty => { companyTotal += Number(qty) || 0; });
+    });
+
+    const rowData = (sheet.data || {})[code];
+    if(!rowData) return;
+    let dayTotal = 0;
+    Object.entries(rowData).forEach(([item, qty]) => {
+      const n = Number(qty) || 0;
+      itemTotals[item] = (itemTotals[item] || 0) + n;
+      dayTotal += n;
+    });
+    dailyTotals.push({ date: sheet.date, total: dayTotal });
+    grand += dayTotal;
+  });
+
+  const avgPerDay = branchSheets.length ? Math.round(grand / branchSheets.length) : 0;
+
+  // Rank against every configured item, so an item this branch never sent
+  // can correctly appear as its least-sold item, not just the smallest nonzero one.
+  const rankedItems = items.map(it => [it, itemTotals[it] || 0]).sort((a,b) => b[1]-a[1]);
+  const topItem = rankedItems[0];
+  const leastItem = rankedItems.length ? rankedItems[rankedItems.length - 1] : null;
+
+  const sharePct = companyTotal > 0 ? Math.round((grand / companyTotal) * 100) : 0;
+
+  const bestDay = dailyTotals.length ? dailyTotals.reduce((a,b) => (b.total > a.total ? b : a)) : null;
+
+  document.getElementById('branch-kpi-row').innerHTML = `
+    <div class="kpi-card"><div class="kpi-value">${grand}</div><div class="kpi-label">Total dispatched</div></div>
+    <div class="kpi-card"><div class="kpi-value">${avgPerDay}</div><div class="kpi-label">Avg per day</div></div>
+    <div class="kpi-card"><div class="kpi-value${topItem ? ' clickable' : ''}"${topItem ? ` data-item-name="${escapeHtml(topItem[0])}" title="Tap for detail analysis"` : ''}>${topItem ? escapeHtml(topItem[0]) : '–'}</div><div class="kpi-label">Top item</div></div>
+    <div class="kpi-card"><div class="kpi-value${leastItem ? ' clickable' : ''}"${leastItem ? ` data-item-name="${escapeHtml(leastItem[0])}" title="Tap for detail analysis"` : ''}>${leastItem ? escapeHtml(leastItem[0]) : '–'}</div><div class="kpi-label">Least sold item</div></div>
+    <div class="kpi-card"><div class="kpi-value">${sharePct}%</div><div class="kpi-label">Share of company total</div></div>
+    <div class="kpi-card"><div class="kpi-value">${bestDay ? bestDay.total : '–'}</div><div class="kpi-label">${bestDay ? `Best day (${escapeHtml(bestDay.date)})` : 'Best day'}</div></div>
+  `;
+  document.querySelectorAll('#branch-kpi-row [data-item-name]').forEach(el => {
+    el.addEventListener('click', () => openItemDetail(el.getAttribute('data-item-name')));
+  });
+
+  document.getElementById('branch-trend-label').textContent = `Daily trend for this branch`;
+  document.getElementById('branch-item-label').textContent = `Item breakdown`;
+  renderTrendChart('branch-trend-chart', dailyTotals);
+  renderBars('branch-item-bars', itemTotals, openItemDetail);
+}
+
+function openBranchDetail(code){
+  flushBackgroundSave();
+  currentBranchDetailCode = code;
+  renderBranchDetail();
+
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  ['sheet-tab','analysis-tab','history-tab','setup-tab','item-detail-tab'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('branch-detail-tab').style.display = 'block';
+}
+
+// ---- Item detail (which branch sells this item most) page ----
+
+let currentItemDetailName = null;
+let itemDetailReturnTo = 'analysis'; // where the back button should return to
+
+function getItemAnalysisRange(){
+  const preset = document.getElementById('item-range-preset').value;
+  return computeRangeFromPreset(
+    preset,
+    document.getElementById('item-range-from').value,
+    document.getElementById('item-range-to').value
+  );
+}
+
+function openItemDetail(name){
+  if(!name) return;
+  flushBackgroundSave();
+
+  // Remember which screen this was opened from so "Back" feels natural
+  // whether it was tapped from the sheet grid, Analysis, or a branch page.
+  if(document.getElementById('branch-detail-tab').style.display === 'block'){
+    itemDetailReturnTo = 'branch-detail';
+  }else if(document.getElementById('sheet-tab').style.display === 'block'){
+    itemDetailReturnTo = 'sheet';
+  }else{
+    itemDetailReturnTo = 'analysis';
+  }
+
+  currentItemDetailName = name;
+  renderItemDetail();
+
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  ['sheet-tab','analysis-tab','history-tab','setup-tab','branch-detail-tab'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('item-detail-tab').style.display = 'block';
+}
+
+function closeItemDetail(){
+  if(itemDetailReturnTo === 'branch-detail' && currentBranchDetailCode){
+    document.getElementById('item-detail-tab').style.display = 'none';
+    document.getElementById('branch-detail-tab').style.display = 'block';
+    renderBranchDetail();
+  }else if(itemDetailReturnTo === 'sheet'){
+    switchTab('sheet');
+  }else{
+    switchTab('analysis');
+  }
+}
+
+function renderItemDetail(){
+  const name = currentItemDetailName;
+  if(!name) return;
+  document.getElementById('item-detail-title').textContent = name;
+
+  const { from, to } = getItemAnalysisRange();
+  const emptyEl = document.getElementById('item-detail-empty');
+  const contentEl = document.getElementById('item-detail-content');
+
+  const sheetsInRange = allSheets().filter(s => (!from || s.date >= from) && (!to || s.date <= to));
+  // A saved 0 is a real, meaningful entry ("dispatched none that day") — this
+  // must count as data too, not just quantities greater than zero, or a run
+  // of genuine zeros would wrongly show as "no data for this item".
+  const hasAny = sheetsInRange.some(s => Object.values(s.data || {}).some(rowData => {
+    const v = (rowData || {})[name];
+    return v !== undefined && v !== null && v !== '';
+  }));
+
+  if(!from || !to || !hasAny){
+    emptyEl.style.display = 'block';
+    contentEl.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  contentEl.style.display = 'block';
+
+  const branchTotals = {}; // code -> qty of this item
+  const dailyTotals = [];
+  let grand = 0;
+  let companyTotal = 0;
+
+  sheetsInRange.forEach(sheet => {
+    let dayTotal = 0;
+    Object.entries(sheet.data || {}).forEach(([code, rowData]) => {
+      Object.values(rowData || {}).forEach(q => { companyTotal += Number(q) || 0; });
+      const q = Number((rowData || {})[name]) || 0;
+      branchTotals[code] = (branchTotals[code] || 0) + q;
+      dayTotal += q;
+    });
+    dailyTotals.push({ date: sheet.date, total: dayTotal });
+    grand += dayTotal;
+  });
+
+  const avgPerDay = sheetsInRange.length ? Math.round(grand / sheetsInRange.length) : 0;
+  const sharePct = companyTotal > 0 ? Math.round((grand / companyTotal) * 100) : 0;
+
+  // Rank against every currently active branch (plus any that sent this item
+  // while retired), so a branch that never sent this item still correctly
+  // shows up as the least, instead of just being left off the list.
+  const allCodes = Array.from(new Set([...Object.keys(branches), ...Object.keys(branchTotals)]));
+  const ranked = allCodes.map(code => [code, branchTotals[code] || 0]).sort((a,b) => b[1]-a[1]);
+  const topBranch = ranked[0];
+  const leastBranch = ranked.length ? ranked[ranked.length - 1] : null;
+
+  const bestDay = dailyTotals.length ? dailyTotals.reduce((a,b) => (b.total > a.total ? b : a)) : null;
+
+  document.getElementById('item-kpi-row').innerHTML = `
+    <div class="kpi-card"><div class="kpi-value">${grand}</div><div class="kpi-label">Total dispatched</div></div>
+    <div class="kpi-card"><div class="kpi-value">${avgPerDay}</div><div class="kpi-label">Avg per day</div></div>
+    <div class="kpi-card"><div class="kpi-value">${topBranch && topBranch[1] > 0 ? escapeHtml(branchLabel(topBranch[0])) : '–'}</div><div class="kpi-label">Top branch</div></div>
+    <div class="kpi-card"><div class="kpi-value">${leastBranch ? escapeHtml(branchLabel(leastBranch[0])) : '–'}</div><div class="kpi-label">Least branch</div></div>
+    <div class="kpi-card"><div class="kpi-value">${sharePct}%</div><div class="kpi-label">Share of company total</div></div>
+    <div class="kpi-card"><div class="kpi-value">${bestDay ? bestDay.total : '–'}</div><div class="kpi-label">${bestDay ? `Best day (${escapeHtml(bestDay.date)})` : 'Best day'}</div></div>
+  `;
+
+  renderTrendChart('item-trend-chart', dailyTotals);
+  renderItemBranchBars(ranked);
+  renderItemBranchBreakdown(ranked, grand);
+}
+
+function renderItemBranchBars(ranked){
+  const container = document.getElementById('item-branch-bars');
+  const withSales = ranked.filter(([, qty]) => qty > 0);
+  const rows = withSales.length ? withSales : ranked;
+  if(rows.length === 0){
+    container.innerHTML = `<p class="trend-empty-note">No data.</p>`;
+    return;
+  }
+  const max = rows[0][1] || 1;
+  container.innerHTML = rows.map(([code, qty]) => `
+    <div class="bar-row">
+      <div class="bar-top"><span class="bar-name clickable" data-branch-code="${escapeHtml(code)}" title="Tap for this branch's full detail">${escapeHtml(branchLabel(code))}</span><span class="bar-qty">${escapeHtml(qty)}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max((qty/max)*100, 3)}%"></div></div>
+    </div>
+  `).join('');
+  container.querySelectorAll('[data-branch-code]').forEach(el => {
+    el.addEventListener('click', () => openBranchDetail(el.getAttribute('data-branch-code')));
+  });
+}
+
+function renderItemBranchBreakdown(ranked, grand){
+  const table = document.getElementById('item-breakdown-table');
+  if(ranked.length === 0){
+    table.innerHTML = `<tr><td><p class="trend-empty-note">No data.</p></td></tr>`;
+    return;
+  }
+  const headRow = `<tr><th>Branch</th><th class="num">Qty</th><th class="num">Share</th></tr>`;
+  const bodyRows = ranked.map(([code, qty], i) => {
+    const share = grand > 0 ? Math.round((qty / grand) * 100) : 0;
+    const tag = (i === 0 && qty > 0) ? '<span class="tag top">Top</span>' : (i === ranked.length - 1 ? '<span class="tag least">Least</span>' : '');
+    return `
+    <tr>
+      <td class="branch-name" data-branch-code="${escapeHtml(code)}">${escapeHtml(branchLabel(code))} ${tag}</td>
+      <td class="num">${escapeHtml(qty)}</td>
+      <td class="num">${share}%</td>
+    </tr>`;
+  }).join('');
+
+  table.innerHTML = headRow + bodyRows;
+  table.querySelectorAll('td.branch-name[data-branch-code]').forEach(cell => {
+    cell.addEventListener('click', () => openBranchDetail(cell.getAttribute('data-branch-code')));
+  });
+}
+
+function exportBackup(){
+  const backup = { app: 'senthil-dispatch', exportedAt: new Date().toISOString(), data: {} };
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(key && (key.startsWith('sheet:') || key.startsWith('config:'))){
+      backup.data[key] = localStorage.getItem(key);
+    }
+  }
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `senthil-backup-${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  setStatus('backup-status', 'Backup downloaded.', false, 2500);
+}
+
+function restoreBackupFile(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let data;
+    try{
+      const parsed = JSON.parse(e.target.result);
+      data = parsed && parsed.data ? parsed.data : parsed;
+    }catch(err){
+      setStatus('backup-status', 'Could not read this file — pick a valid backup .json file.', true, 4000);
+      return;
+    }
+    const keys = Object.keys(data || {}).filter(k => k.startsWith('sheet:') || k.startsWith('config:'));
+    if(keys.length === 0){
+      setStatus('backup-status', 'This file does not look like a valid backup.', true, 4000);
+      return;
+    }
+    if(!confirm(`Restore ${keys.length} record(s) from this backup? This will overwrite any sheets or settings with the same date or name.`)) return;
+
+    keys.forEach(k => {
+      storeSet(k, data[k]);
+      queueCloudSync(k);
+    });
+    loadConfig();
+    renderGrid();
+    renderItemsSetup();
+    renderBranchesSetup();
+
+    setStatus('backup-status', `Restored ${keys.length} record(s).`, false, 3000);
+  };
+  reader.readAsText(file);
+}
+
+async function init(){
+  loadConfig();
+  document.getElementById('sheet-date').value = todayStr();
+  renderGrid();
+
+  const saveBtn = document.getElementById('save-btn');
+
+  document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  document.getElementById('sheet-date').addEventListener('change', () => {
+    flushBackgroundSave();
+    renderGrid();
+  });
+  saveBtn.addEventListener('click', () => saveSheet());
+  document.getElementById('branch-back-btn').addEventListener('click', () => switchTab('sheet'));
+  document.getElementById('item-back-btn').addEventListener('click', closeItemDetail);
+
+  document.getElementById('range-preset').addEventListener('change', (e) => {
+    const isCustom = e.target.value === 'custom';
+    document.getElementById('range-from-field').style.display = isCustom ? 'block' : 'none';
+    document.getElementById('range-to-field').style.display = isCustom ? 'block' : 'none';
+    if(isCustom){
+      const t = todayStr();
+      if(!document.getElementById('range-from').value) document.getElementById('range-from').value = t;
+      if(!document.getElementById('range-to').value) document.getElementById('range-to').value = t;
+    }
+    runAnalysis();
+  });
+  document.getElementById('range-from').addEventListener('change', runAnalysis);
+  document.getElementById('range-to').addEventListener('change', runAnalysis);
+  document.getElementById('export-analysis-btn').addEventListener('click', exportAnalysisCSV);
+  document.getElementById('export-day-image-btn').addEventListener('click', exportDayDataImage);
+
+  document.getElementById('branch-range-preset').addEventListener('change', (e) => {
+    const isCustom = e.target.value === 'custom';
+    document.getElementById('branch-range-from-field').style.display = isCustom ? 'block' : 'none';
+    document.getElementById('branch-range-to-field').style.display = isCustom ? 'block' : 'none';
+    if(isCustom){
+      const t = todayStr();
+      if(!document.getElementById('branch-range-from').value) document.getElementById('branch-range-from').value = t;
+      if(!document.getElementById('branch-range-to').value) document.getElementById('branch-range-to').value = t;
+    }
+    renderBranchDetail();
+  });
+  document.getElementById('branch-range-from').addEventListener('change', renderBranchDetail);
+  document.getElementById('branch-range-to').addEventListener('change', renderBranchDetail);
+
+  document.getElementById('item-range-preset').addEventListener('change', (e) => {
+    const isCustom = e.target.value === 'custom';
+    document.getElementById('item-range-from-field').style.display = isCustom ? 'block' : 'none';
+    document.getElementById('item-range-to-field').style.display = isCustom ? 'block' : 'none';
+    if(isCustom){
+      const t = todayStr();
+      if(!document.getElementById('item-range-from').value) document.getElementById('item-range-from').value = t;
+      if(!document.getElementById('item-range-to').value) document.getElementById('item-range-to').value = t;
+    }
+    renderItemDetail();
+  });
+  document.getElementById('item-range-from').addEventListener('change', renderItemDetail);
+  document.getElementById('item-range-to').addEventListener('change', renderItemDetail);
+
+  document.getElementById('add-item-btn').addEventListener('click', () => {
+    const inp = document.getElementById('new-item-name');
+    const name = inp.value.trim();
+    if(!name || items.some(i => i.toLowerCase() === name.toLowerCase())){ inp.value=''; return; }
+    items.push(name);
+    saveItemsConfig();
+    renderItemsSetup();
+    inp.value = '';
+  });
+
+  document.getElementById('add-branch-btn').addEventListener('click', () => {
+    const inp = document.getElementById('new-branch-name');
+    const name = inp.value.trim();
+    if(!name) return;
+    // Skip any code that's currently in use OR was ever used by a deleted branch —
+    // otherwise a new branch could silently inherit a retired branch's old sheet data.
+    let n = Object.keys(branches).length + Object.keys(retiredBranches).length + 1;
+    let code = 'b' + n;
+    while(branches[code] || retiredBranches[code]){ n++; code = 'b' + n; }
+    branches[code] = name;
+    saveBranchesConfig();
+    renderBranchesSetup();
+    inp.value = '';
+  });
+
+  document.getElementById('cloud-sync-btn').addEventListener('click', syncNow);
+  document.getElementById('backup-export-btn').addEventListener('click', exportBackup);
+  document.getElementById('backup-restore-btn').addEventListener('click', () => {
+    document.getElementById('backup-file-input').click();
+  });
+  document.getElementById('backup-file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) restoreBackupFile(file);
+    e.target.value = '';
+  });
+
+  // Start cloud sync after the local UI is ready.
+  await initSupabase();
+}
+
+init();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      // Offline caching only works when this app is hosted at a real (http/https) address.
+      // If it's just opened as a local file, the app still works fine — it never needs the internet.
+    });
+  });
+}
+
+</script>
+</body>
+</html>
